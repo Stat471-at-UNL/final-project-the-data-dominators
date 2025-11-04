@@ -6,3 +6,18 @@ format: html
 # The Data Dominators
 
 Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong
+
+## Introduction
+
+## Dataset
+
+To load the data:
+
+```{r}
+brfss_2023 <- foreign::read.xport(unzip("data/LLCP2023XPT.zip"))
+brfss_2024 <- foreign::read.xport(unzip("data/LLCP2024XPT.zip"))
+```
+
+## Course Relevance
+
+## Plan of Work
