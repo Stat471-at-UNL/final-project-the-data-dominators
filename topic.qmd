@@ -5,8 +5,4 @@ format: html
 
 # The Data Dominators
 
-Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong 
-
-Test time
-
-What??
+Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong
