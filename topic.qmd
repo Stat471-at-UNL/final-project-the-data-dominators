@@ -31,3 +31,9 @@ We plan to filter the dataset to only use records from the state of Missouri. Ou
 ## Course Relevance
 
 ## Plan of Work
+
+We’ll create a clean package structure with version control, documentation, and automated checks. We’ll need to download, read, and locally store the CDC ZIP/XPT files, then filter them to Missouri records. This will allow us to avoid downloading large files repeatedly.
+
+Before cleaning, we'll check how many rows and columns and what each variable represents. Next, we'll need to identify which variables have missing values or outliers. We will handle missing data using multiple imputation. For each variable with missing values, we will generate five imputed versions. For each record, one random imputed value will be selected to create a single completed dataset, while still leaving the original variable with its missing values for reference. 
+
+Due to BRFSS using coded responses, we will also review the codebooks and recode these values when needed. We will also make variable names consistent across the 2023 and 2024 datasets to ensure they can be easily combined. We'll document these cleaning steps and help make the work done transparent for future package users. 
