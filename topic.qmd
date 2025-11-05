@@ -9,6 +9,8 @@ Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong
 
 ## Introduction
 
+We are developing an R package that contains cleaned 2023 and 2024 BRFSS datasets based on records from the state of Missouri. We chose this project because accessing BRFSS data currently requires downloading and manually extracting large ZIP files from the official website, which can be time-consuming and inconvenient. By creating this package, we aim to make the dataset easily accessible and ready to use directly within RStudio. Our goal is to simplify the process for other users and make BRFSS a well-known, user-friendly dataset that can be loaded as easily as built-in datasets like *iris*.
+
 ## Dataset
 
 The BRFSS data for our project is found at this [link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC along with state health departments regularly conduct telephone surveys to collect this health-related data about U.S. residents. We downloaded the 2023 and 2024 data (most recent releases) in the SAS Transport Format, both provided in separate .zip files. Reading in these files can be easily accomplished with the help of the `haven` R package.
@@ -24,7 +26,7 @@ brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 r
 
 We plan to filter the dataset to only use records from the state of Missouri. Our original idea was to use Nebraska's data, but since it has limited topics, we chose our southeastern neighbors. The topics covered are:
 
-* Cancer Survivorship: Course of Treatment, Cancer Survivorship: Pain Management, Cancer Survivorship: Type of Cancer, Childhood Asthma Prevalence, Cognitive Decline, Diabetes, HPV – Vaccination, Marijuana Use, Other Tobacco Use, Random Child Selection, Sexual Orientation, Tobacco Cessation
+-   Cancer Survivorship: Course of Treatment, Cancer Survivorship: Pain Management, Cancer Survivorship: Type of Cancer, Childhood Asthma Prevalence, Cognitive Decline, Diabetes, HPV – Vaccination, Marijuana Use, Other Tobacco Use, Random Child Selection, Sexual Orientation, Tobacco Cessation
 
 ## Course Relevance
 
