@@ -1,5 +1,5 @@
 ---
-title: "topic"
+title: "STAT 471 Project Topic"
 format: html
 ---
 
@@ -11,12 +11,20 @@ Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong
 
 ## Dataset
 
+The BRFSS data for our project is found at this [link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC along with state health departments regularly conduct telephone surveys to collect this health-related data about U.S. residents. We downloaded the 2023 and 2024 data (most recent releases) in the SAS Transport Format, both provided in separate .zip files. Reading in these files can be easily accomplished with the help of the `haven` R package.
+
 To load the data:
 
-```{r}
-brfss_2023 <- foreign::read.xport(unzip("data/LLCP2023XPT.zip"))
-brfss_2024 <- foreign::read.xport(unzip("data/LLCP2024XPT.zip"))
+```{r, eval=FALSE}
+library(haven)
+
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
 ```
+
+We plan to filter the dataset to only use records from the state of Missouri. Our original idea was to use Nebraska's data, but since it has limited topics, we chose our southeastern neighbors. The topics covered are:
+
+* Cancer Survivorship: Course of Treatment, Cancer Survivorship: Pain Management, Cancer Survivorship: Type of Cancer, Childhood Asthma Prevalence, Cognitive Decline, Diabetes, HPV – Vaccination, Marijuana Use, Other Tobacco Use, Random Child Selection, Sexual Orientation, Tobacco Cessation
 
 ## Course Relevance
 
