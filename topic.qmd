@@ -30,6 +30,8 @@ We plan to filter the dataset to only use records from the state of Missouri. Ou
 
 ## Course Relevance
 
+Several techniques within the scope of this course that will need to be utilized in the completion of this project. The first of which will be linking/joining data from different data sets into a single, cohesive dataset which was a key skill learned in Module 4. Another skill required to complete this project will be imputing missing values, a skill learned in Module 3 of STAT471. There will be missing values within the data sets, and handling them will be important. A third technique within the scope of the course that will need to be applied is the transforming and tidying of data. Creating an R package containing untidy data sets would lead to usability issues and definitely be a problem.
+
 ## Plan of Work
 
 We’ll create a clean package structure with version control, documentation, and automated checks. We’ll need to download, read, and locally store the CDC ZIP/XPT files, then filter them to Missouri records. This will allow us to avoid downloading large files repeatedly.
