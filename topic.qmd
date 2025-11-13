@@ -27,6 +27,7 @@ brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 r
 We plan to filter the dataset to only use records from the state of Missouri. Our original idea was to use Nebraska's data, but since it has limited topics, we chose our southeastern neighbors. The topics covered are:
 
 -   Cancer Survivorship: Course of Treatment, Cancer Survivorship: Pain Management, Cancer Survivorship: Type of Cancer, Childhood Asthma Prevalence, Cognitive Decline, Diabetes, HPV – Vaccination, Marijuana Use, Other Tobacco Use, Random Child Selection, Sexual Orientation, Tobacco Cessation
+-   We evaluated the Missing Completely At Random (MCAR) assumption using Little’s MCAR test. For the set of tobacco-use variables in 2024 (`SMOKE100, SMOKDAY2, USENOW3, ECIGNOW3`), the test yielded χ²(18) = 7033, p \< 0.001, with 10 distinct missing-data patterns. For the 2023 tobacco variables (`SMOKE100, SMOKDAY2, USENOW3, ECIGNOW2`), the result was similarly extreme, χ²(16) = 6957, p \< 0.001, with 9 missing-data patterns. The results strongly suggest that the missing data on tobacco use is not random. Among households with at least one child, Little’s MCAR test for the childhood asthma variables (`CASTHDX2, CASTHNO2`) also strongly rejected MCAR in both years: χ²(1) = 1412, p \< 0.001 in 2024 and χ²(1) = 1360, p \< 0.001 in 2023 (3 missing-data patterns in each year). Therefore, the missing data for childhood asthma is also not random.
 
 ## Course Relevance
 
