@@ -10,9 +10,20 @@ editor:
 
 ## Introduction
 
-intro to topic, motivation, course relevance
-
-Jia Yee
+We developed an R package that includes cleaned 2023 and 2024 BRFSS
+datasets for the state of Missouri, focusing specifically on the
+Cognitive Decline and Tobacco Use modules. We chose this project because
+accessing BRFSS data currently requires downloading and manually
+extracting large ZIP files from the official website, which is
+time-consuming and inconvenient. Our package is designed to make these
+data easily accessible and ready to use directly within RStudio. Our
+goal is to simplify the workflow for other users and help BRFSS become a
+well-known, user-friendly resource that can be loaded as easily as
+built-in datasets like `iris`. In this project, we will identify missing
+values in the Cognitive Decline and Tobacco Use modules, characterize
+the types of missingness, and impute those missing values. Finally, we
+will transform and tidy the data so that it is well structured and easy
+to use in a public R package.
 
 ## Dataset
 
@@ -64,7 +75,26 @@ tidying the dataset.
 
 ### Investigating Missing Values
 
-Jia Yee
+Before deciding how to handle missing data, we examined how often values
+were missing and what type of missingness might be present (MCAR, MAR,
+or MNAR).
+
+First, we summarized the extent of missing data for the tobacco and
+cognitive variables in the 2023 and 2024 Missouri samples. We found that
+several items had a large amount of missingness, especially in the
+cognitive module (`CDHOUS1`, `CDSOCIA1`), where more than 40–90% of
+responses were missing or not applicable.
+
+![](images/clipboard-2362076978.png)
+
+We then formally tested whether the missing data could be considered
+Missing Completely At Random (MCAR) using Little’s MCAR test
+(`naniar::mcar_test`). We applied this test separately to the tobacco
+variables and the cognitive variables for both years. In all cases, the
+MCAR test was highly significant (p \< 0.001), indicating strong
+evidence against MCAR. This suggests that missingness is related to
+observed or unobserved characteristics, and it supports the use of
+multiple imputations
 
 ### Imputing Missing Values
 
@@ -127,7 +157,10 @@ shown in the figure below:
 
 ![](images/OriginalsVsImputed.png)
 
-The distributions of all the imputed columns look extremely similar to their corresponding original distribution, convincing us that the PMM imputation worked very well. However, this dataset still isn't ready for use, as it needs to be turned into a tidy format.
+The distributions of all the imputed columns look extremely similar to
+their corresponding original distribution, convincing us that the PMM
+imputation worked very well. However, this dataset still isn't ready for
+use, as it needs to be turned into a tidy format.
 
 ### Tidying the Dataset
 
