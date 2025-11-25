@@ -1,4 +1,142 @@
 ---
-title: "draft"
+title: "Initial Draft"
 format: html
+editor: 
+  markdown: 
+    wrap: 72
 ---
+
+# Cleaning and Packaging the Missouri BRFSS Data
+
+## Introduction
+
+intro to topic, motivation, course relevance
+
+Jia Yee
+
+## Dataset
+
+The BRFSS data for our project is found at this
+[link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC
+along with state health departments regularly conduct telephone surveys
+to collect this health-related data about U.S. residents. We downloaded
+the 2023 and 2024 data (most recent releases) in the SAS Transport
+Format, both provided in separate .zip files. Reading in these files can
+be easily accomplished with the help of the `haven` R package.
+
+To load the data:
+
+```{r, eval=FALSE}
+library(haven)
+
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
+```
+
+We filtered the dataset to only use records from the state of Missouri.
+Our original idea was to use Nebraska's data, but since it has limited
+topics, we chose our southeastern neighbors. The Missouri data included
+information on a wide range of topics, but we chose to focus on the
+**Cognitive Decline** and **Tobacco Use** modules. We got rid of the
+rest of the columns (that weren't used in the missing value imputation
+either), and analyzed/cleaned those two.
+
+## Cleaning the Data
+
+The main effort of our project went into cleaning the dataset, which
+grew to be quite the task. For starters, the dataset is *huge*, which is
+quite overwhelming to someone unfamiliar with the data. There is
+documentation in place, but it only makes analysis slightly easier.
+Combining two years' worth of data just makes the problem worse, as some
+of the column names didn't match up.
+
+The BRFSS data also naturally has lots of missing data. This is because,
+in each state, surveyors pick and choose only a handful of modules out
+of the wide variety of topics. This means that a state has missing
+values in the columns relating to all the other modules. Additionally,
+there are frequent missing values even in the columns relating to
+modules that a state was questioned on.
+
+These factors combined made cleaning the dataset a tough task but, more
+importantly, a necessary one. This turned into a 3-step process:
+investigating the missing values, imputing the missing values, and
+tidying the dataset.
+
+### Investigating Missing Values
+
+Jia Yee
+
+### Imputing Missing Values
+
+After analyzing the missing values, we imputed three fields from our
+chosen modules:
+
+-   `SMOKE100`: Have you smoked at Least 100 Cigarettes
+    -   1 - Yes; 2 - No; 7 - Don't Know; 9 - Refused
+-   `ECIGNOW`: Do you now use e-cigarettes, or vaping products?
+    -   1 - Never; 2 - Every day; 3 - Some days; 4 - Not right now; 7 -
+        Don't know; 9 - Refused
+-   `CIMEMLO1`: Have you experienced difficulties with thinking or
+    memory that is happening more often or is getting worse?
+    -   1 - Yes; 2 - No; 7 - Don't know; 9 - Refused
+
+The imputation method that we chose to use was **Predicted Mean Matching
+(PMM).** This is a reliable prediction strategy that keeps the data
+realistic by maintaining the original shape and spread of the data. The
+algorithm works by finding a small group of instances (the default is 5
+which was used) that are very similar to the instance that you are
+imputing. This similarity is based on specified fields. Once those are
+identified, a random complete instance (has an observed value in the
+field that is being imputed) is selected. This ensures that the imputed
+value is an actual value, not just a generated average. In the case of
+this dataset where the values are specific integers, this detail is even
+more crucial.
+
+The predictor fields that we used to impute these values were selected
+based on prior knowledge and our own hypotheses. These included a wide
+range of demographic, health, and miscellaneous info.
+
+Predictors:
+
+-   `MARITAL`: Marital Status
+-   `EDUCA`: Education Level
+-   `VETERAN3`: Veteran Status
+-   `EMPLOY1`: Employment Status
+-   `CHILDREN`: Number of Children in Household
+-   `INCOME3`: Income Level
+-   `PREGNANT`: Pregnancy Status
+-   `WEIGHT2`: Reported Weight in Pounds
+-   `CRACE1`: Child Non-Hispanic Race including Multiracial
+-   `ASTHMS1`: Asthma Status
+-   `CAGEG`: Child age
+-   `AGE80`: Age value (collapsed above 80)
+-   `CHCOCNC1`: Ever told you had melanoma or any other types of cancer
+-   `ALCDAY4`: Days in past 30 had alcoholic beverage
+-   `MARJSMOK`: Did you smoke marijuana or cannabis
+-   `GENHLTH`: General Health
+-   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
+    month)
+
+We kept 3 imputed versions of each column, along with the original
+column, in the resulting dataset after imputation.
+
+To ensure that the imputation worked properly and didn't skew the
+results, we then analyzed the distributions of the original columns
+compared to their imputed versions. A summary of these distributions is
+shown in the figure below:
+
+![](images/OriginalsVsImputed.png)
+
+The distributions of all the imputed columns look extremely similar to their corresponding original distribution, convincing us that the PMM imputation worked very well. However, this dataset still isn't ready for use, as it needs to be turned into a tidy format.
+
+### Tidying the Dataset
+
+Brett Jack
+
+### R Package
+
+Mitch
+
+## Conclusion
+
+Brett Jack
