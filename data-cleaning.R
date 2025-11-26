@@ -188,6 +188,24 @@ final_plot + plot_layout(ncol = 4, nrow = 3)
 
 head(brfss_complete)
 
+# Creation of Demographics Dataset
+
+Demographics <- brfss_complete %>% select(SEQNO, AGE80, CAGEG, CRACE1, MARITAL, EDUCA, INCOME3, EMPLOY1, CHILDREN, VETERAN3, PREGNANT, WEIGHT2, GENHLTH, MENTHLTH)
+
+head(Demographics)
+
+# Creation of Cognitive Decline Dataset
+
+CognitiveDecline <- brfss_complete %>% select(SEQNO, CIMEMLO1, CIMEMLO1_IMP1,CIMEMLO1_IMP2,CIMEMLO1_IMP3)
+
+head(CognitiveDecline)
+# Creation of Tobacco Use Dataset
+
+TobaccoUse <- brfss_complete %>% select(SEQNO, SMOKE100, SMOKE100_IMP1, SMOKE100_IMP2, SMOKE100_IMP3, ECIGNOW, ECIGNOW_IMP1, ECIGNOW_IMP2, ECIGNOW_IMP3, SMOKER3)
+
+head(TobaccoUse)
+
+
 # Identifying Key (`SEQNO` for both)
 brfss_2024 %>% group_by(`SEQNO`) %>% summarise(n = n()) %>% filter(n > 1)
 brfss_2023 %>% group_by(`SEQNO`) %>% summarise(n = n()) %>% filter(n > 1)
