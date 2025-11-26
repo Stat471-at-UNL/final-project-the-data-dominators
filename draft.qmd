@@ -85,15 +85,13 @@ several items had a large amount of missingness, especially in the
 cognitive module (`CDHOUS1`, `CDSOCIA1`), where more than 40–90% of
 responses were missing or not applicable.
 
-![](images/clipboard-2362076978.png)
-
-We then formally tested whether the missing data could be considered
-Missing Completely At Random (MCAR) using Little’s MCAR test
-(`naniar::mcar_test`). We applied this test separately to the tobacco
-variables and the cognitive variables for both years. In all cases, the
-MCAR test was highly significant (p \< 0.001), indicating strong
-evidence against MCAR. This suggests that missingness is related to
-observed or unobserved characteristics, and it supports the use of
+![](images/missing.png)We then formally tested whether the missing data
+could be considered Missing Completely At Random (MCAR) using Little’s
+MCAR test (`naniar::mcar_test`). We applied this test separately to the
+tobacco variables and the cognitive variables for both years. In all
+cases, the MCAR test was highly significant (p \< 0.001), indicating
+strong evidence against MCAR. This suggests that missingness is related
+to observed or unobserved characteristics, and it supports the use of
 multiple imputations
 
 ### Imputing Missing Values
@@ -164,22 +162,45 @@ use, as it needs to be turned into a tidy format.
 
 ### Tidying the Dataset
 
-We first split up the new and complete BRFSS dataset into 3 applicable datasets named Demographics, CognitiveDecline, and TobaccoUse. 
+We first split up the new and complete BRFSS dataset into 3 applicable
+datasets named Demographics, CognitiveDecline, and TobaccoUse.
 
-The Demographics dataset included columns: `SEQNO`, `AGE80`, `CAGEG`, `CRACE1`, `MARITAL`, `EDUCA`, `INCOME3`, `EMPLOY1`, `CHILDREN`, `VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`). 
+The Demographics dataset included columns: `SEQNO`, `AGE80`, `CAGEG`,
+`CRACE1`, `MARITAL`, `EDUCA`, `INCOME3`, `EMPLOY1`, `CHILDREN`,
+`VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`).
 
-CognitiveDecline included columns: (`SEQNO`, `CIMEMLO1`, `CIMEMLO1_IMP1`,`CIMEMLO1_IMP2`,`CIMEMLO1_IMP3`). 
+CognitiveDecline included columns: (`SEQNO`, `CIMEMLO1`,
+`CIMEMLO1_IMP1`,`CIMEMLO1_IMP2`,`CIMEMLO1_IMP3`).
 
-TobaccoUse included columns: (`SEQNO`, `SMOKE100`, `SMOKE100_IMP1`, `SMOKE100_IMP2`, `SMOKE100_IMP3`, `ECIGNOW`, `ECIGNOW_IMP1`, `ECIGNOW_IMP2`, `ECIGNOW_IMP3`, `SMOKER3`)
+TobaccoUse included columns: (`SEQNO`, `SMOKE100`, `SMOKE100_IMP1`,
+`SMOKE100_IMP2`, `SMOKE100_IMP3`, `ECIGNOW`, `ECIGNOW_IMP1`,
+`ECIGNOW_IMP2`, `ECIGNOW_IMP3`, `SMOKER3`)
 
-After splitting up the dataset, we verified that SEQNO is unique with in each year's BRFSS Missouri subset and can use it as the primary key when splitting into multiple related tables. This was confirmed when the output revealed no duplicate SEQNO ID/numbers, which documents it as a single column key and normal form.
-### R Package
+After splitting up the dataset, we verified that SEQNO is unique with in
+each year's BRFSS Missouri subset and can use it as the primary key when
+splitting into multiple related tables. This was confirmed when the
+output revealed no duplicate SEQNO ID/numbers, which documents it as a
+single column key and normal form. \### R Package
 
 Mitch
 
 ## Conclusion
 
-In this project, we transformed raw BRFSS Missouri data into a clean, well-structured, and user-friendly R package that makes access easier to two important public health modules: Cognitive Decline and Tobacco Use. By downloading and cleaning the 2023 and 2024 datasets, we created a reproducible workflow that makes these large and complex data files available with a single function call. Our work addressed challenges such as inconsistent variable naming across years, missing values, and imputating missing values, while still allowing the usability of the original survey responses.
+In this project, we transformed raw BRFSS Missouri data into a clean,
+well-structured, and user-friendly R package that makes access easier to
+two important public health modules: Cognitive Decline and Tobacco Use.
+By downloading and cleaning the 2023 and 2024 datasets, we created a
+reproducible workflow that makes these large and complex data files
+available with a single function call. Our work addressed challenges
+such as inconsistent variable naming across years, missing values, and
+imputating missing values, while still allowing the usability of the
+original survey responses.
 
-Through MCAR testing, we confirmed that missingness patterns were not completely at random, and we used Predictive Mean Matching (PMM) to impute three fields. Plots showed that the PMM imputations closely reflected the original data distributions, showing that PMM worked well. After imputation, we reorganized the cleaned data into tidy seperate datasets (Demographics, CognitiveDecline, and TobaccoUse) built using SEQNO as a key. This structure makes the dataset easier to explore and analyze in future projects.
-
+Through MCAR testing, we confirmed that missingness patterns were not
+completely at random, and we used Predictive Mean Matching (PMM) to
+impute three fields. Plots showed that the PMM imputations closely
+reflected the original data distributions, showing that PMM worked well.
+After imputation, we reorganized the cleaned data into tidy seperate
+datasets (Demographics, CognitiveDecline, and TobaccoUse) built using
+SEQNO as a key. This structure makes the dataset easier to explore and
+analyze in future projects.
