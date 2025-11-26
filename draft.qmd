@@ -85,7 +85,7 @@ several items had a large amount of missingness, especially in the
 cognitive module (`CDHOUS1`, `CDSOCIA1`), where more than 40–90% of
 responses were missing or not applicable.
 
-![](images/missing.png)We then formally tested whether the missing data
+![](images/missing.png) We then formally tested whether the missing data
 could be considered Missing Completely At Random (MCAR) using Little’s
 MCAR test (`naniar::mcar_test`). We applied this test separately to the
 tobacco variables and the cognitive variables for both years. In all
@@ -162,33 +162,40 @@ use, as it needs to be turned into a tidy format.
 
 ### Tidying the Dataset
 
-We first split up the new and complete BRFSS dataset into 3 applicable
-datasets named Demographics, CognitiveDecline, and TobaccoUse.
+To tidy the dataset, we first split up the new, complete BRFSS dataset
+into 3 applicable datasets: Demographics, CognitiveDecline, and
+TobaccoUse. The goal of this was to make the data segmented and easier
+to use, instead of just providing one large dataset.
 
-The Demographics dataset included columns: `SEQNO`, `AGE80`, `CAGEG`,
-`CRACE1`, `MARITAL`, `EDUCA`, `INCOME3`, `EMPLOY1`, `CHILDREN`,
-`VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`).
+The **Demographics** dataset included columns: `SEQNO`, `AGE80`,
+`CAGEG`, `CRACE1`, `MARITAL`, `EDUCA`, `INCOME3`, `EMPLOY1`, `CHILDREN`,
+`VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`.
 
-CognitiveDecline included columns: (`SEQNO`, `CIMEMLO1`,
-`CIMEMLO1_IMP1`,`CIMEMLO1_IMP2`,`CIMEMLO1_IMP3`).
+**CognitiveDecline** included columns: `SEQNO`, `CIMEMLO1`,
+`CIMEMLO1_IMP1`,`CIMEMLO1_IMP2`,`CIMEMLO1_IMP3`.
 
-TobaccoUse included columns: (`SEQNO`, `SMOKE100`, `SMOKE100_IMP1`,
+**TobaccoUse** included columns: `SEQNO`, `SMOKE100`, `SMOKE100_IMP1`,
 `SMOKE100_IMP2`, `SMOKE100_IMP3`, `ECIGNOW`, `ECIGNOW_IMP1`,
-`ECIGNOW_IMP2`, `ECIGNOW_IMP3`, `SMOKER3`)
+`ECIGNOW_IMP2`, `ECIGNOW_IMP3`, `SMOKER3`
 
-<<<<<<< HEAD
-After splitting up the dataset, we verified that SEQNO is unique with in each year's BRFSS Missouri subset and can use it as the primary key when splitting into multiple related tables. This was confirmed when the output revealed no duplicate SEQNO ID/numbers, which documents it as a single column key and normal form.
+After splitting up the dataset, we verified that `SEQNO` is unique with
+in each year's BRFSS Missouri subset, and can use it as the primary key
+when splitting into multiple related tables. This was confirmed when the
+output revealed no duplicate SEQNO ID/numbers. This documents it as a
+single column key and normal form.
 
 ### R Package
-=======
-After splitting up the dataset, we verified that SEQNO is unique with in
-each year's BRFSS Missouri subset and can use it as the primary key when
-splitting into multiple related tables. This was confirmed when the
-output revealed no duplicate SEQNO ID/numbers, which documents it as a
-single column key and normal form. \### R Package
->>>>>>> c9171cdfefced96919b374bc8ae0128ddbb1eeec
 
-Mitch
+Once we were done with the data cleaning, the final step was to set up
+an R package so that others could easily use this data. The package
+includes the three resulting sub-datasets (`demographics`,
+`tobacco_use`, `cognitive_decline`), as well as the full dataset
+(`missouri_brfss`). Users simply have to install the package and load
+the library to have access to these datasets. From there, further
+analysis can be done.
+
+The package website is found at this
+[link](https://mfehr7.github.io/BRFSSMissouri/).
 
 ## Conclusion
 
