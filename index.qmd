@@ -48,9 +48,15 @@ We filtered the dataset to only use records from the state of Missouri.
 Our original idea was to use Nebraska's data, but since it has limited
 topics, we chose our southeastern neighbors. The Missouri data included
 information on a wide range of topics, but we chose to focus on the
-**Cognitive Decline** and **Tobacco Use** modules. We got rid of the
+**Cognitive Decline** and **Tobacco Use** modules, as well as important **Demographics**. We got rid of the
 rest of the columns (that weren't used in the missing value imputation
 either), and analyzed/cleaned those two.
+
+### Demographics
+
+### Cognitive Decline
+
+### Tobacco Use
 
 ## Cleaning the Data
 
@@ -169,7 +175,8 @@ to use, instead of just providing one large dataset.
 
 The **Demographics** dataset included columns: `SEQNO`, `AGE80`,
 `CAGEG`, `CRACE1`, `MARITAL`, `EDUCA`, `INCOME3`, `EMPLOY1`, `CHILDREN`,
-`VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`.
+`VETERAN3`, `PREGNANT`, `WEIGHT2`, `GENHLTH`, `MENTHLTH`, `MARJSMOK`,
+\`\`
 
 **CognitiveDecline** included columns: `SEQNO`, `CIMEMLO1`,
 `CIMEMLO1_IMP1`,`CIMEMLO1_IMP2`,`CIMEMLO1_IMP3`.
@@ -196,6 +203,13 @@ analysis can be done.
 
 The package website is found at this
 [link](https://mfehr7.github.io/BRFSSMissouri/).
+
+### Example Usage
+
+```{r, eval=FALSE}
+remotes::install_github("mfehr7/BRFSSMissouri")
+```
+
 
 ## Conclusion
 
