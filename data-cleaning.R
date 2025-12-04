@@ -197,7 +197,8 @@ final_plot + plot_layout(ncol = 4, nrow = 3)
 head(brfss_complete)
 
 # Creation of Demographics Dataset
-Demographics <- brfss_complete %>% select(SEQNO, AGE80, CAGEG, CRACE1, MARITAL, EDUCA, INCOME3, EMPLOY1, CHILDREN, VETERAN3, PREGNANT, WEIGHT2, GENHLTH, MENTHLTH)
+Demographics <- brfss_complete %>% select(SEQNO, MARITAL, EDUCA, VETERAN3, EMPLOY1, CHILDREN, INCOME3, PREGNANT, WEIGHT2, CRACE1,
+                                          ASTHMS1, CAGEG, AGE80, CHCOCNC1, ALCDAY4, MARJSMOK, GENHLTH, MENTHLTH)
 head(Demographics)
 
 # Creation of Cognitive Decline Dataset

@@ -231,21 +231,37 @@ After analyzing the missing values, we imputed three fields from our
 chosen modules:
 
 -   `SMOKE100`: Have you smoked at Least 100 Cigarettes
-    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9 (Refused)
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9
+        (Refused)
 -   `ECIGNOW`: Do you now use e-cigarettes, or vaping products?
-    -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some days); 4 (Not right now); 7 (Don't know); 9 (Refused)
+    -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some
+        days); 4 (Not right now); 7 (Don't know); 9 (Refused)
 -   `CIMEMLO1`: Have you experienced difficulties with thinking or
     memory that is happening more often or is getting worse?
-    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9 (Refused)
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9
+        (Refused)
 
-Since values of 7 and 9 represent missing data in this context, we treated them as such by recoding them to `NA` prior to the imputation.
+Since values of 7 and 9 represent missing data in this context, we
+treated them as such by recoding them to `NA` prior to the imputation.
 
-The imputation method that we chose to use was **Predicted Mean Matching (PMM)**, implemented using the `mice` library. This is a reliable prediction strategy that maintains realism by preserving the original shape and spread of the data. The algorithm functions by identifying a small group of "donor" instances (we used the default of 5) that are statistically similar to the instance being imputed. Once those are identified, a random complete instance (meaning it has an observed value in the field that is being imputed) is selected to fill the gap.
+The imputation method that we chose to use was **Predicted Mean Matching
+(PMM)**, implemented using the `mice` library. This is a reliable
+prediction strategy that maintains realism by preserving the original
+shape and spread of the data. The algorithm functions by identifying a
+small group of "donor" instances (we used the default of 5) that are
+statistically similar to the instance being imputed. Once those are
+identified, a random complete instance (meaning it has an observed value
+in the field that is being imputed) is selected to fill the gap.
 
-This approach ensures that the imputed value is an actual observed value, not just a generated average. In the case of
-this dataset, which consists of specific categorical integers, this detail is even more crucial. Using a different imputation methodology would have left us with nonsensical floating point numbers.
+This approach ensures that the imputed value is an actual observed
+value, not just a generated average. In the case of this dataset, which
+consists of specific categorical integers, this detail is even more
+crucial. Using a different imputation methodology would have left us
+with nonsensical floating point numbers.
 
-The predictor fields that we used to impute these values were selected based on prior domain knowledge and our own hypotheses, incorporating a wide range of demographic, health, and family variables.
+The predictor fields that we used to impute these values were selected
+based on prior domain knowledge and our own hypotheses, incorporating a
+wide range of demographic, health, and family variables.
 
 Predictors:
 
@@ -268,13 +284,14 @@ Predictors:
 -   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
     month)
 
-Using these predictors, we generated three imputed versions of each target column. We also retained the original
-column in the resulting dataset to allow users to choose which column version they preferred.
+Using these predictors, we generated three imputed versions of each
+target column. We also retained the original column in the resulting
+dataset to allow users to choose which column version they preferred.
 
 To ensure the imputation process worked properly and did not skew the
-results, we analyzed the distributions of the original columns
-against to their imputed counterparts. A summary of these distributions is
-shown in the figure below:
+results, we analyzed the distributions of the original columns against
+to their imputed counterparts. A summary of these distributions is shown
+in the figure below:
 
 ```{r, echo=FALSE, warning=FALSE}
 #
@@ -304,8 +321,12 @@ final_plot <- p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12
 final_plot + plot_layout(ncol = 4, nrow = 3)
 ```
 
-The distributions of the imputed columns are extremely similar to
-their corresponding original distributions, accounting for the exclusion of the 7 and 9 values. These similarities suggest that the PMM imputation worked as intended. Although the imputation is complete, the dataset is not yet fully ready for use, as it still needs to be converted to a tidy format.
+The distributions of the imputed columns are extremely similar to their
+corresponding original distributions, accounting for the exclusion of
+the 7 and 9 values. These similarities suggest that the PMM imputation
+worked as intended. Although the imputation is complete, the dataset is
+not yet fully ready for use, as it still needs to be converted to a tidy
+format.
 
 ### Tidying the Dataset
 
@@ -334,15 +355,16 @@ single column key and normal form.
 
 ### R Package
 
-Once the data was cleaned, the final step was to set up
-an R package so that others could easily import and use this data. The package
-includes the three resulting sub-datasets (`demographics`,
-`tobacco_use`, `cognitive_decline`), as well as the complete dataset
+Once the data was cleaned, the final step was to set up an R package so
+that others could easily import and use this data. The package includes
+the three resulting sub-datasets (`demographics`, `tobacco_use`,
+`cognitive_decline`), as well as the complete dataset
 (`missouri_brfss`). Users simply have to install the package and load
 the library to have access to these datasets. From there, further
 analysis can be done.
 
-The package website for further documentation is found [here](https://mfehr7.github.io/BRFSSMissouri/).
+The package website for further documentation is found
+[here](https://mfehr7.github.io/BRFSSMissouri/).
 
 ### Example Usage
 
@@ -365,7 +387,8 @@ tobacco_use
 cognitive_decline
 ```
 
-As an example analysis, this code looks at the average `SMOKE100` value (using `SMOKE100_IMP1`) among different ages.   
+As an example analysis, this code looks at the average `SMOKE100` value
+(using `SMOKE100_IMP1`) among different ages.
 
 ```{r}
 # Summary table
@@ -378,7 +401,12 @@ smoke_by_age %>%
   ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
 ```
 
-A value of 1 indicates that a person *has* smoked 100 cigarettes, while a value of 2 indicates that a person *has not*. The trend seen in the plot is what you would expect, as cigarettes were more common for older generations growing up than they are now. Younger ages have an average closer to 2, since their generations have alternate, popular nicotine devices.
+A value of 1 indicates that a person *has* smoked 100 cigarettes, while
+a value of 2 indicates that a person *has not*. The trend seen in the
+plot is what you would expect, as cigarettes were more common for older
+generations growing up than they are now. Younger ages have an average
+closer to 2, since their generations have alternate, popular nicotine
+devices.
 
 ## Conclusion
 
