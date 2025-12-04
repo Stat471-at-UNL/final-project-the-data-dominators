@@ -177,6 +177,7 @@ information on a wide range of topics, but we chose to focus on the
 used in the missing value imputation either), and analyzed/cleaned those
 two.
 
+
 ### Demographics
 For the Demographics dataset, we observe 18 different variables pertaining to demographics of the respondents. There are 14,528 rows of data containing observations.
 -   `SEQNO`: Key of the Dataset
