@@ -81,17 +81,25 @@ summary(brfss_2023_tob_cog)
 brfss_tob_cog <- bind_rows(brfss_2023_tob_cog, brfss_2024_tob_cog)
 summary(brfss_tob_cog) # 14,528 combined observations
 
+# Turning the values of 7 (Don't know) and 9 (Refused) to NAs so that they are imputed too
+brfss_for_imp <- brfss_tob_cog %>%
+  mutate(
+    SMOKE100 = ifelse(SMOKE100 %in% c(7, 9), NA, SMOKE100),
+    ECIGNOW = ifelse(ECIGNOW %in% c(7, 9), NA, ECIGNOW),
+    CIMEMLO1 = ifelse(CIMEMLO1 %in% c(7, 9), NA, CIMEMLO1)
+  )
+
 # Number of missing values in the columns to be imputed
-sum(is.na(brfss_tob_cog$`SMOKE100`)) # 439
-sum(is.na(brfss_tob_cog$`ECIGNOW`)) # 457
-sum(is.na(brfss_tob_cog$`CIMEMLO1`)) # 5908
+sum(is.na(brfss_for_imp$`SMOKE100`)) # 439 --> 532 w/ 79s
+sum(is.na(brfss_for_imp$`ECIGNOW`)) # 457 --> 489 w/ 79s
+sum(is.na(brfss_for_imp$`CIMEMLO1`)) # 5908 --> 6077 w/ 79s
 
 #
 # Imputing
 #
 
 # Dry run to get the matrix skeleton, so that we can alter it for each column
-ini <- mice(brfss_tob_cog, maxit = 0)
+ini <- mice(brfss_for_imp, maxit = 0)
 pred <- ini$predictorMatrix
 # Reset the entire matrix to 0
 pred[,] <- 0
@@ -110,7 +118,7 @@ print(pred[c("SMOKE100", "ECIGNOW", "CIMEMLO1"), ])
 
 # Actual imputation
 brfss_imputed <- mice(
-  brfss_tob_cog,
+  brfss_for_imp,
   m = 3,
   predictorMatrix = pred,
   method = "pmm",
@@ -157,24 +165,24 @@ sum(is.na(brfss_complete$`CIMEMLO1_IMP3`))
 #
 
 # SMOKE100
-p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_histogram() + ggtitle("Original")
-p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_histogram() + ggtitle("Imputation 1")
-p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_histogram() + ggtitle("Imputation 2")
-p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_histogram() + ggtitle("Imputation 3")
+p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("Original")
+p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imputation 3")
 (p1 + p2) / (p3 + p4)
 
 # ECIGNOW
-p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_histogram() + ggtitle("Original")
-p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_histogram() + ggtitle("Imputation 1")
-p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_histogram() + ggtitle("Imputation 2")
-p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_histogram() + ggtitle("Imputation 3")
+p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("Original")
+p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imputation 3")
 (p5 + p6) / (p7 + p8)
 
 # CIMEMLO1
-p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_histogram() + ggtitle("Original")
-p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_histogram() + ggtitle("Imputation 1")
-p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_histogram() + ggtitle("Imputation 2")
-p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_histogram() + ggtitle("Imputation 3")
+p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("Original")
+p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imputation 3")
 (p9 + p10) / (p11 + p12)
 
 # Plotting all together

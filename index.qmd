@@ -6,6 +6,130 @@ editor:
     wrap: 72
 ---
 
+```{r, include=FALSE}
+
+## *All code taken from data-cleaning.R* ##
+
+library(haven)
+library(tidyverse)
+library(mice)
+library(patchwork)
+
+###################################
+##### EDA / Preparation ###########
+###################################
+
+# Load the data
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
+
+# Get just Missouri's data
+brfss_2024 <- brfss_2024 %>% filter(`_STATE` == 29.00)
+brfss_2023 <-brfss_2023 %>% filter(`_STATE` == 29)
+
+# Locating columns that weren't included in Missouri's modules
+brfss_2024 %>%
+  summarise(
+    across(everything(), ~ sum(!is.na(.)))
+  ) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_na") %>%
+  filter(n_na != 0) %>% view()
+
+# Selecting only the columns that we are going to focus on (this is just a start, might add/drop)
+brfss_2024_tob_cog <- brfss_2024 %>%
+  select(`SEQNO`, # Key
+         `IDAY`, `IMONTH`, `IYEAR`, # Survey Date
+         `SMOKE100`, `ECIGNOW3`, # Tobacco Use
+         `CIMEMLO1`, # Cognitive Decline
+         `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `_CRACE1`, # Demographics
+         `_ASTHMS1`, `_SMOKER3`, `CAGEG`, `_AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH` # Extras
+         ) %>%
+  rename(ECIGNOW = ECIGNOW3, # for uniform names
+         CRACE1 = `_CRACE1`, # the rest are changed to not cause problems in mice
+         ASTHMS1 = `_ASTHMS1`,
+         SMOKER3 = `_SMOKER3`,
+         AGE80 = `_AGE80`
+         )
+
+brfss_2023_tob_cog <- brfss_2023 %>%
+  select(`SEQNO`, # Key
+         `IDAY`, `IMONTH`, `IYEAR`, # Survey Date
+         `SMOKE100`, `ECIGNOW2`, # Tobacco Use
+         `CIMEMLO1`, # Cognitive Decline
+         `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `_CRACE1`, # Demographics
+         `_ASTHMS1`, `_SMOKER3`, `CAGEG`, `_AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH` # Extras
+         ) %>%
+  rename(ECIGNOW = ECIGNOW2, # for uniform names
+         CRACE1 = `_CRACE1`, # the rest are changed to not cause problems in mice
+         ASTHMS1 = `_ASTHMS1`,
+         SMOKER3 = `_SMOKER3`,
+         AGE80 = `_AGE80`
+         )
+
+
+###################################
+##### IMPUTING MISSING VALUES #####
+###################################
+
+# Joining the two datasets for imputation / tidying
+brfss_tob_cog <- bind_rows(brfss_2023_tob_cog, brfss_2024_tob_cog)
+
+# Turning the values of 7 (Don't know) and 9 (Refused) to NAs so that they are imputed too
+brfss_for_imp <- brfss_tob_cog %>%
+  mutate(
+    SMOKE100 = ifelse(SMOKE100 %in% c(7, 9), NA, SMOKE100),
+    ECIGNOW = ifelse(ECIGNOW %in% c(7, 9), NA, ECIGNOW),
+    CIMEMLO1 = ifelse(CIMEMLO1 %in% c(7, 9), NA, CIMEMLO1)
+  )
+
+#
+# Imputing
+#
+
+# Dry run to get the matrix skeleton, so that we can alter it for each column
+ini <- mice(brfss_for_imp, maxit = 0)
+pred <- ini$predictorMatrix
+# Reset the entire matrix to 0
+pred[,] <- 0
+
+# Predictors (everything except the targets)
+predictors <- c("MARITAL", "EDUCA", "VETERAN3", "EMPLOY1", "CHILDREN", "INCOME3", "PREGNANT", "WEIGHT2", "CRACE1",
+                "ASTHMS1", "CAGEG", "AGE80", "CHCOCNC1", "ALCDAY4", "MARJSMOK", "GENHLTH", "MENTHLTH")
+
+# Set Predictors for each target column
+pred["SMOKE100", predictors] <- 1
+pred["ECIGNOW", predictors] <- 1
+pred["CIMEMLO1", predictors] <- 1
+
+# Actual imputation
+brfss_imputed <- mice(
+  brfss_for_imp,
+  m = 3,
+  predictorMatrix = pred,
+  method = "pmm",
+  seed = 20251124,
+  print = FALSE
+)
+
+#
+# Loop to add imputed values
+#
+brfss_complete <- brfss_tob_cog
+for(i in 1:3) {
+  # Imputed data for the i-th imputation
+  completed <- complete(brfss_imputed, action = i)
+
+  # Select only the target columns
+  imp_cols <- completed %>%
+    select(all_of(c("SMOKE100", "ECIGNOW", "CIMEMLO1"))) %>%
+    rename_with(~ paste0(., "_IMP", i))  # renaming them for clarity
+
+  # Append to complete dataset
+  brfss_complete <- bind_cols(brfss_complete, imp_cols)
+}
+
+```
+
 # Cleaning and Packaging the Missouri BRFSS Data
 
 ## Introduction
@@ -48,9 +172,10 @@ We filtered the dataset to only use records from the state of Missouri.
 Our original idea was to use Nebraska's data, but since it has limited
 topics, we chose our southeastern neighbors. The Missouri data included
 information on a wide range of topics, but we chose to focus on the
-**Cognitive Decline** and **Tobacco Use** modules, as well as important **Demographics**. We got rid of the
-rest of the columns (that weren't used in the missing value imputation
-either), and analyzed/cleaned those two.
+**Cognitive Decline** and **Tobacco Use** modules, as well as important
+**Demographics**. We got rid of the rest of the columns (that weren't
+used in the missing value imputation either), and analyzed/cleaned those
+two.
 
 ### Demographics
 
@@ -106,29 +231,21 @@ After analyzing the missing values, we imputed three fields from our
 chosen modules:
 
 -   `SMOKE100`: Have you smoked at Least 100 Cigarettes
-    -   1 - Yes; 2 - No; 7 - Don't Know; 9 - Refused
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9 (Refused)
 -   `ECIGNOW`: Do you now use e-cigarettes, or vaping products?
-    -   1 - Never; 2 - Every day; 3 - Some days; 4 - Not right now; 7 -
-        Don't know; 9 - Refused
+    -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some days); 4 (Not right now); 7 (Don't know); 9 (Refused)
 -   `CIMEMLO1`: Have you experienced difficulties with thinking or
     memory that is happening more often or is getting worse?
-    -   1 - Yes; 2 - No; 7 - Don't know; 9 - Refused
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9 (Refused)
 
-The imputation method that we chose to use was **Predicted Mean Matching
-(PMM).** This is a reliable prediction strategy that keeps the data
-realistic by maintaining the original shape and spread of the data. The
-algorithm works by finding a small group of instances (the default is 5
-which was used) that are very similar to the instance that you are
-imputing. This similarity is based on specified fields. Once those are
-identified, a random complete instance (has an observed value in the
-field that is being imputed) is selected. This ensures that the imputed
-value is an actual value, not just a generated average. In the case of
-this dataset where the values are specific integers, this detail is even
-more crucial.
+Since values of 7 and 9 represent missing data in this context, we treated them as such by recoding them to `NA` prior to the imputation.
 
-The predictor fields that we used to impute these values were selected
-based on prior knowledge and our own hypotheses. These included a wide
-range of demographic, health, and miscellaneous info.
+The imputation method that we chose to use was **Predicted Mean Matching (PMM)**, implemented using the `mice` library. This is a reliable prediction strategy that maintains realism by preserving the original shape and spread of the data. The algorithm functions by identifying a small group of "donor" instances (we used the default of 5) that are statistically similar to the instance being imputed. Once those are identified, a random complete instance (meaning it has an observed value in the field that is being imputed) is selected to fill the gap.
+
+This approach ensures that the imputed value is an actual observed value, not just a generated average. In the case of
+this dataset, which consists of specific categorical integers, this detail is even more crucial. Using a different imputation methodology would have left us with nonsensical floating point numbers.
+
+The predictor fields that we used to impute these values were selected based on prior domain knowledge and our own hypotheses, incorporating a wide range of demographic, health, and family variables.
 
 Predictors:
 
@@ -151,20 +268,44 @@ Predictors:
 -   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
     month)
 
-We kept 3 imputed versions of each column, along with the original
-column, in the resulting dataset after imputation.
+Using these predictors, we generated three imputed versions of each target column. We also retained the original
+column in the resulting dataset to allow users to choose which column version they preferred.
 
-To ensure that the imputation worked properly and didn't skew the
-results, we then analyzed the distributions of the original columns
-compared to their imputed versions. A summary of these distributions is
+To ensure the imputation process worked properly and did not skew the
+results, we analyzed the distributions of the original columns
+against to their imputed counterparts. A summary of these distributions is
 shown in the figure below:
 
-![](images/OriginalsVsImputed.png)
+```{r, echo=FALSE, warning=FALSE}
+#
+# Visually analyzing imputed values
+#
 
-The distributions of all the imputed columns look extremely similar to
-their corresponding original distribution, convincing us that the PMM
-imputation worked very well. However, this dataset still isn't ready for
-use, as it needs to be turned into a tidy format.
+# SMOKE100
+p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("Original")
+p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# ECIGNOW
+p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("Original")
+p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# CIMEMLO1
+p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("Original")
+p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# Plotting all together
+final_plot <- p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12
+final_plot + plot_layout(ncol = 4, nrow = 3)
+```
+
+The distributions of the imputed columns are extremely similar to
+their corresponding original distributions, accounting for the exclusion of the 7 and 9 values. These similarities suggest that the PMM imputation worked as intended. Although the imputation is complete, the dataset is not yet fully ready for use, as it still needs to be converted to a tidy format.
 
 ### Tidying the Dataset
 
@@ -193,23 +334,51 @@ single column key and normal form.
 
 ### R Package
 
-Once we were done with the data cleaning, the final step was to set up
-an R package so that others could easily use this data. The package
+Once the data was cleaned, the final step was to set up
+an R package so that others could easily import and use this data. The package
 includes the three resulting sub-datasets (`demographics`,
-`tobacco_use`, `cognitive_decline`), as well as the full dataset
+`tobacco_use`, `cognitive_decline`), as well as the complete dataset
 (`missouri_brfss`). Users simply have to install the package and load
 the library to have access to these datasets. From there, further
 analysis can be done.
 
-The package website is found at this
-[link](https://mfehr7.github.io/BRFSSMissouri/).
+The package website for further documentation is found [here](https://mfehr7.github.io/BRFSSMissouri/).
 
 ### Example Usage
 
-```{r, eval=FALSE}
+To install and load the package:
+
+```{r, results='hide', message=FALSE, warning=FALSE}
 remotes::install_github("mfehr7/BRFSSMissouri")
+library(BRFSSMissouri)
 ```
 
+The datasets are automatically loaded in as global variables:
+
+```{r, eval=FALSE}
+# Complete dataset
+missouri_brfss
+
+# Sub-datasets
+demographics
+tobacco_use
+cognitive_decline
+```
+
+As an example analysis, this code looks at the average `SMOKE100` value (using `SMOKE100_IMP1`) among different ages.   
+
+```{r}
+# Summary table
+smoke_by_age <- missouri_brfss %>%
+  group_by(AGE80) %>%
+  summarise(`AVG_SMOKE100` = mean(SMOKE100_IMP1))
+
+# Summary plot
+smoke_by_age %>%
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
+```
+
+A value of 1 indicates that a person *has* smoked 100 cigarettes, while a value of 2 indicates that a person *has not*. The trend seen in the plot is what you would expect, as cigarettes were more common for older generations growing up than they are now. Younger ages have an average closer to 2, since their generations have alternate, popular nicotine devices.
 
 ## Conclusion
 
