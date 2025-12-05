@@ -1,5 +1,4 @@
 ---
-title: "Initial Draft"
 format: html
 editor: 
   markdown: 
@@ -130,24 +129,113 @@ for(i in 1:3) {
 
 ```
 
+```{r, include=FALSE}
+##code taken from missing-values.R* ##
+
+library(dplyr)
+library(naniar)
+library(haven)
+library(tidyverse)
+library(ggplot2)
+library(visdat)
+
+# recode 'dont know' and 'refused' to NA
+recode_brfs_missing <- function(x) {
+  miss_codes <- c(7, 9, 77, 99)
+  replace(x, x %in% miss_codes, NA)
+}
+
+# define variable name
+tobacco_vars  <- c("SMOKE100", "SMOKDAY2", "USENOW3", "ECIGNOW2", "ECIGNOW3")
+
+cognitive_vars <- c("CIMEMLO1", "CDHOUS1", "CDSOCIA1")
+
+demo_vars <- c(
+  "MARITAL", "EDUCA", "VETERAN3", "EMPLOY1", "CHILDREN",
+  "INCOME3", "PREGNANT", "WEIGHT2", "_CRACE1", "_ASTHMS1",
+  "CAGEG", "_AGE80", "CHCOCNC1", "ALCDAY4", "MARJSMOK",
+  "GENHLTH", "MENTHLTH"
+)
+
+# figure out which of these exist in each year
+tobacco_vars_2023   <- intersect(tobacco_vars,   names(brfss_2023))
+tobacco_vars_2024   <- intersect(tobacco_vars,   names(brfss_2024))
+cognitive_vars_2023 <- intersect(cognitive_vars, names(brfss_2023))
+cognitive_vars_2024 <- intersect(cognitive_vars, names(brfss_2024))
+
+# recode missing for selected vars
+brfss_2023_missing <- brfss_2023 |>
+  mutate(
+    across(all_of(tobacco_vars_2023),   recode_brfs_missing),
+    across(all_of(cognitive_vars_2023), recode_brfs_missing),
+    `_SMOKER3` = replace(`_SMOKER3`, `_SMOKER3` == 9, NA)
+  )
+
+brfss_2024_missing <- brfss_2024 |>
+  mutate(
+    across(all_of(tobacco_vars_2024),   recode_brfs_missing),
+    across(all_of(cognitive_vars_2024), recode_brfs_missing),
+    `_SMOKER3` = replace(`_SMOKER3`, `_SMOKER3` == 9, NA)
+  )
+
+# only keep vars present in both years
+vars_all <- c(demo_vars, cognitive_vars, tobacco_vars)
+
+vars_2023 <- intersect(vars_all, names(brfss_2023_missing))
+vars_2024 <- intersect(vars_all, names(brfss_2024_missing))
+
+vars_both <- intersect(vars_2023, vars_2024)
+
+# combined 2023 and 2024
+combined_brfss <- bind_rows(
+  brfss_2023_missing|>
+    mutate(year = "2023") |>
+    select(year, all_of(vars_both)),
+  brfss_2024_missing|>
+    mutate(year = "2024") |>
+    select(year, all_of(vars_both))
+)
+# summary of missingness
+miss_summary <- combined_brfss |>
+  group_by(year) |>
+  miss_var_summary() |>
+  ungroup()
+
+
+# map variable to group
+var_domains <- tibble(
+  variable = vars_both,
+  domain   = case_when(
+    variable %in% demo_vars      ~ "Demographic",
+    variable %in% cognitive_vars ~ "Cognitive",
+    variable %in% tobacco_vars   ~ "Tobacco",
+    TRUE ~ "Other"
+  )
+)
+
+miss_summary <- miss_summary |>
+  left_join(var_domains, by = "variable") |>
+  mutate(
+    domain   = if_else(is.na(domain), "Other", domain),
+    pct_miss = as.numeric(pct_miss)
+  )
+```
+
 # Cleaning and Packaging the Missouri BRFSS Data
 
 ## Introduction
 
-We developed an R package that includes cleaned 2023 and 2024 BRFSS
-datasets for the state of Missouri, focusing specifically on the
-Cognitive Decline and Tobacco Use modules. We chose this project because
-accessing BRFSS data currently requires downloading and manually
-extracting large ZIP files from the official website, which is
-time-consuming and inconvenient. Our package is designed to make these
-data easily accessible and ready to use directly within RStudio. Our
-goal is to simplify the workflow for other users and help BRFSS become a
-well-known, user-friendly resource that can be loaded as easily as
-built-in datasets like `iris`. In this project, we will identify missing
+We developed an R package that provides cleaned 2023 and 2024 BRFSS
+datasets for the state of Missouri, focusing on the Cognitive Decline
+and Tobacco Use modules. We chose this project because accessing BRFSS
+data currently requires downloading and manually extracting large ZIP
+files from the CDC website, which is time-consuming and inconvenient.
+Our package is designed to make these data easily accessible and
+analysis-ready directly within R. In this project, we identify missing
 values in the Cognitive Decline and Tobacco Use modules, characterize
-the types of missingness, and impute those missing values. Finally, we
-will transform and tidy the data so that it is well structured and easy
-to use in a public R package.
+the patterns and mechanisms of missingness, and impute missing values.
+Finally, we transform and tidy the data so that it is well structured
+and easy to use in a publicly available R package.
 
 ## Dataset
 
@@ -177,59 +265,52 @@ information on a wide range of topics, but we chose to focus on the
 used in the missing value imputation either), and analyzed/cleaned those
 two.
 
-
 ### Demographics
-For the Demographics dataset, we observe 18 different variables pertaining to demographics of the respondents. There are 14,528 rows of data containing observations.
--   `SEQNO`: Key of the Dataset
--   `MARITAL`: Marital Status
--   `EDUCA`: Education Level
--   `VETERAN3`: Veteran Status
--   `EMPLOY1`: Employment Status
--   `CHILDREN`: Number of Children in Household
--   `INCOME3`: Income Level
--   `PREGNANT`: Pregnancy Status
--   `WEIGHT2`: Reported Weight in Pounds
--   `CRACE1`: Child Non-Hispanic Race including Multiracial
--   `CAGEG`: Child age
--   `AGE80`: Age value (collapsed above 80)
--   `GENHLTH`: General Health
--   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
-    month)
--   `CHCOCNC`: Melanoma or other types of cancer
--   `ALCDAY4`: Days in the past 30 had alcohol
--   `MARJSMOK`: Did you smoke marijuana or cannabis
--   `ASTHMS1`: Asthma Status
 
-
+For the Demographics dataset, we observe 18 different variables
+pertaining to demographics of the respondents. There are 14,528 rows of
+data containing observations. - `SEQNO`: Key of the Dataset - `MARITAL`:
+Marital Status - `EDUCA`: Education Level - `VETERAN3`: Veteran Status -
+`EMPLOY1`: Employment Status - `CHILDREN`: Number of Children in
+Household - `INCOME3`: Income Level - `PREGNANT`: Pregnancy Status -
+`WEIGHT2`: Reported Weight in Pounds - `CRACE1`: Child Non-Hispanic Race
+including Multiracial - `CAGEG`: Child age - `AGE80`: Age value
+(collapsed above 80) - `GENHLTH`: General Health - `MENTHLTH`: Number of
+Days Mental Health Not Good (out of the past month) - `CHCOCNC`:
+Melanoma or other types of cancer - `ALCDAY4`: Days in the past 30 had
+alcohol - `MARJSMOK`: Did you smoke marijuana or cannabis - `ASTHMS1`:
+Asthma Status
 
 ### Cognitive Decline
-For the Cognitive Decline topic, we observe 5 different variables pertaining to cognitive decline. There are 14,528 rows of data containing observations 
--   `SEQNO`: Key of the Dataset
--   `CIMEMLO1`: Difficulties with Thinking or Memory
--   `CIMEMLO1_IMP1`: 1st imputation of CIMEMLO1
--   `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1
--   `CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
+
+For the Cognitive Decline topic, we observe 5 different variables
+pertaining to cognitive decline. There are 14,528 rows of data
+containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
+Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
+of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
+`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
 
 ### Tobacco Use
-For the Cognitive Decline topic, we observe 5 different variables pertaining to cognitive decline. There are 14,528 rows of data containing observations 
--   `SEQNO`: Key of the Dataset
--   `CIMEMLO1`: Difficulties with Thinking or Memory
--   `CIMEMLO1_IMP1`: 1st imputation of CIMEMLO1
--   `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1
--   `CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
 
+For the Cognitive Decline topic, we observe 5 different variables
+pertaining to cognitive decline. There are 14,528 rows of data
+containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
+Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
+of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
+`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
 
 ## Cleaning the Data
--    `SEQNO`: Key of the Dataset
--    `SMOKER3`: general smoking status
--    `SMOKE100`: smoked at least 100 cigarettes
--    `SMOKE100_IMP1`: 1st imputation of SMOKE100
--    `SMOKE100_IMP2`: 2nd imputation of SMOKE100
--    `SMOKE100_IMP3`: 3rd imputation of SMOKE100
--    `ECIGNOW`: e-cigarettes usage
--    `ECIGNOW_IMP1`: 1st imputation of ECIGNOW
--    `ECIGNOW_IMP2`: 2nd imputation of ECIGNOW
--    `ECIGNOW_IMP3`: 3rd imputation of ECIGNOW
+
+-   `SEQNO`: Key of the Dataset
+-   `SMOKER3`: general smoking status
+-   `SMOKE100`: smoked at least 100 cigarettes
+-   `SMOKE100_IMP1`: 1st imputation of SMOKE100
+-   `SMOKE100_IMP2`: 2nd imputation of SMOKE100
+-   `SMOKE100_IMP3`: 3rd imputation of SMOKE100
+-   `ECIGNOW`: e-cigarettes usage
+-   `ECIGNOW_IMP1`: 1st imputation of ECIGNOW
+-   `ECIGNOW_IMP2`: 2nd imputation of ECIGNOW
+-   `ECIGNOW_IMP3`: 3rd imputation of ECIGNOW
 
 The main effort of our project went into cleaning the dataset, which
 grew to be quite the task. For starters, the dataset is *huge*, which is
@@ -256,20 +337,82 @@ Before deciding how to handle missing data, we examined how often values
 were missing and what type of missingness might be present (MCAR, MAR,
 or MNAR).
 
-First, we summarized the extent of missing data for the tobacco and
-cognitive variables in the 2023 and 2024 Missouri samples. We found that
-several items had a large amount of missingness, especially in the
-cognitive module (`CDHOUS1`, `CDSOCIA1`), where more than 40–90% of
-responses were missing or not applicable.
+First, we summarized the extent of missing data for the tobacco,
+cognitive, and key demographic variables in the 2023 and 2024 Missouri
+samples.
 
-![](images/missing.png) We then formally tested whether the missing data
-could be considered Missing Completely At Random (MCAR) using Little’s
-MCAR test (`naniar::mcar_test`). We applied this test separately to the
-tobacco variables and the cognitive variables for both years. In all
-cases, the MCAR test was highly significant (p \< 0.001), indicating
-strong evidence against MCAR. This suggests that missingness is related
-to observed or unobserved characteristics, and it supports the use of
-multiple imputations
+```{r, echo=FALSE, warning=FALSE}
+# missing variables visualization
+p_miss_bar <- ggplot(
+  miss_summary |> filter(domain != "Other"),
+  aes(
+    x   = as.numeric(pct_miss),
+    y   = fct_reorder(variable, as.numeric(pct_miss)),
+    fill = year
+  )
+) +
+  geom_col(
+    aes(x = 50),            
+    fill  = "grey80",        
+    colour = NA,
+    alpha = 0.3          
+  ) +
+  geom_col(position = "dodge", alpha = 1) +
+  facet_grid(domain ~ ., scales = "free_y", space = "free") +
+  labs(
+    title = "Percent missing by variable and year (2023 vs 2024)",
+    x     = "% missing",
+    y     = "Variable",
+    fill  = "Year"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8)
+  )
+
+p_miss_bar
+```
+
+We found that several items had a large amount of missingness,
+especially in the cognitive module (`CDHOUS1`, `CDSOCIA1`), where more
+than 40–90% of responses were missing or not applicable. Because of this
+high level of missingness, we did not include these variables in the
+imputation models.
+
+```{r echo=FALSE}
+library(dplyr)
+miss_summary |>
+  filter(variable %in% c("CIMEMLO1", "CDHOUS1", "CDSOCIA1")) |>
+  arrange(variable, year) |>
+  select(year, variable, pct_miss)
+```
+
+We then formally tested whether the missing data could be considered
+Missing Completely At Random (MCAR) using Little’s MCAR test
+(`naniar::mcar_test`). We applied this test separately to the tobacco
+variables and the cognitive variables for both years. Below is an
+example of the MCAR test for the tobacco variables in 2023.
+
+```{r}
+library(naniar)
+# tobacco variables
+tobacco_vars <- c("SMOKE100", "SMOKDAY2", "USENOW3", "ECIGNOW2", "ECIGNOW3")
+
+# keep variables that exist in 2023
+tobacco_vars_2023 <- intersect(tobacco_vars, names(brfss_2023_missing))
+
+# MCAR test
+tobacco_2023 <- brfss_2023_missing |>
+  select(all_of(tobacco_vars_2023))
+
+mcar_tobacco_2023 <-mcar_test(tobacco_2023)
+mcar_tobacco_2023
+```
+
+In all cases, the MCAR test was highly significant (p \<
+`r mcar_tobacco_2023$p.value`), indicating strong evidence against MCAR.
+This suggests that missingness is related to observed or unobserved
+characteristics, and it supports the use of multiple imputation.
 
 ### Imputing Missing Values
 
