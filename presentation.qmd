@@ -1,0 +1,93 @@
+---
+title: 'BRFSS R Package'
+engine: knitr
+type: slides
+format:
+  revealjs:
+    transition: slide
+    background-transition: fade
+    navigation-mode: vertical
+    logo: ../../N.svg
+    includes:
+      in_header: ../../header.html
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+```
+
+# Outline
+
+- Dataset
+  - Demographics
+  - Cognitive Decline
+  - Tobacco Use
+- Cleaning the Data
+  - Investigating Missing Values
+  - Imputing Missing Values
+  - Tidying the Dataset
+- R Package
+  - Example Usage
+- Questions
+
+# Dataset
+
+## Demographics
+
+## Cognitive Decline
+
+## Tobacco Use
+
+# Cleaning the Data
+
+## Investigating Missing Values
+
+## Imputing Missing Values
+
+## Tidying the Dataset
+
+# R Package
+
+## Example Usage
+
+To install and load the package:
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+remotes::install_github("mfehr7/BRFSSMissouri")
+library(BRFSSMissouri)
+```
+
+The datasets are automatically loaded in as global variables:
+
+```{r, eval=FALSE}
+# Complete dataset
+missouri_brfss
+
+# Sub-datasets
+demographics
+tobacco_use
+cognitive_decline
+```
+
+As an example analysis, this code looks at the average `SMOKE100` value
+(using `SMOKE100_IMP1`) among different ages.
+
+```{r}
+# Summary table
+smoke_by_age <- missouri_brfss %>%
+  group_by(AGE80) %>%
+  summarise(`AVG_SMOKE100` = mean(SMOKE100_IMP1))
+
+# Summary plot
+smoke_by_age %>%
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
+```
+
+A value of 1 indicates that a person *has* smoked 100 cigarettes, while
+a value of 2 indicates that a person *has not*. The trend seen in the
+plot is what you would expect, as cigarettes were more common for older
+generations growing up than they are now. Younger ages have an average
+closer to 2, since their generations have alternate, popular nicotine
+devices.
+
+# Questions

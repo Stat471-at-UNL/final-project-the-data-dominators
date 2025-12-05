@@ -1,0 +1,607 @@
+---
+format: html
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include=FALSE}
+
+## *All code taken from data-cleaning.R* ##
+
+library(haven)
+library(tidyverse)
+library(mice)
+library(patchwork)
+
+###################################
+##### EDA / Preparation ###########
+###################################
+
+# Load the data
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
+
+# Get just Missouri's data
+brfss_2024 <- brfss_2024 %>% filter(`_STATE` == 29.00)
+brfss_2023 <-brfss_2023 %>% filter(`_STATE` == 29)
+
+# Locating columns that weren't included in Missouri's modules
+brfss_2024 %>%
+  summarise(
+    across(everything(), ~ sum(!is.na(.)))
+  ) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_na") %>%
+  filter(n_na != 0) %>% view()
+
+# Selecting only the columns that we are going to focus on (this is just a start, might add/drop)
+brfss_2024_tob_cog <- brfss_2024 %>%
+  select(`SEQNO`, # Key
+         `IDAY`, `IMONTH`, `IYEAR`, # Survey Date
+         `SMOKE100`, `ECIGNOW3`, # Tobacco Use
+         `CIMEMLO1`, # Cognitive Decline
+         `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `_CRACE1`, # Demographics
+         `_ASTHMS1`, `_SMOKER3`, `CAGEG`, `_AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH` # Extras
+         ) %>%
+  rename(ECIGNOW = ECIGNOW3, # for uniform names
+         CRACE1 = `_CRACE1`, # the rest are changed to not cause problems in mice
+         ASTHMS1 = `_ASTHMS1`,
+         SMOKER3 = `_SMOKER3`,
+         AGE80 = `_AGE80`
+         )
+
+brfss_2023_tob_cog <- brfss_2023 %>%
+  select(`SEQNO`, # Key
+         `IDAY`, `IMONTH`, `IYEAR`, # Survey Date
+         `SMOKE100`, `ECIGNOW2`, # Tobacco Use
+         `CIMEMLO1`, # Cognitive Decline
+         `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `_CRACE1`, # Demographics
+         `_ASTHMS1`, `_SMOKER3`, `CAGEG`, `_AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH` # Extras
+         ) %>%
+  rename(ECIGNOW = ECIGNOW2, # for uniform names
+         CRACE1 = `_CRACE1`, # the rest are changed to not cause problems in mice
+         ASTHMS1 = `_ASTHMS1`,
+         SMOKER3 = `_SMOKER3`,
+         AGE80 = `_AGE80`
+         )
+
+
+###################################
+##### IMPUTING MISSING VALUES #####
+###################################
+
+# Joining the two datasets for imputation / tidying
+brfss_tob_cog <- bind_rows(brfss_2023_tob_cog, brfss_2024_tob_cog)
+
+# Turning the values of 7 (Don't know) and 9 (Refused) to NAs so that they are imputed too
+brfss_for_imp <- brfss_tob_cog %>%
+  mutate(
+    SMOKE100 = ifelse(SMOKE100 %in% c(7, 9), NA, SMOKE100),
+    ECIGNOW = ifelse(ECIGNOW %in% c(7, 9), NA, ECIGNOW),
+    CIMEMLO1 = ifelse(CIMEMLO1 %in% c(7, 9), NA, CIMEMLO1)
+  )
+
+#
+# Imputing
+#
+
+# Dry run to get the matrix skeleton, so that we can alter it for each column
+ini <- mice(brfss_for_imp, maxit = 0)
+pred <- ini$predictorMatrix
+# Reset the entire matrix to 0
+pred[,] <- 0
+
+# Predictors (everything except the targets)
+predictors <- c("MARITAL", "EDUCA", "VETERAN3", "EMPLOY1", "CHILDREN", "INCOME3", "PREGNANT", "WEIGHT2", "CRACE1",
+                "ASTHMS1", "CAGEG", "AGE80", "CHCOCNC1", "ALCDAY4", "MARJSMOK", "GENHLTH", "MENTHLTH")
+
+# Set Predictors for each target column
+pred["SMOKE100", predictors] <- 1
+pred["ECIGNOW", predictors] <- 1
+pred["CIMEMLO1", predictors] <- 1
+
+# Actual imputation
+brfss_imputed <- mice(
+  brfss_for_imp,
+  m = 3,
+  predictorMatrix = pred,
+  method = "pmm",
+  seed = 20251124,
+  print = FALSE
+)
+
+#
+# Loop to add imputed values
+#
+brfss_complete <- brfss_tob_cog
+for(i in 1:3) {
+  # Imputed data for the i-th imputation
+  completed <- complete(brfss_imputed, action = i)
+
+  # Select only the target columns
+  imp_cols <- completed %>%
+    select(all_of(c("SMOKE100", "ECIGNOW", "CIMEMLO1"))) %>%
+    rename_with(~ paste0(., "_IMP", i))  # renaming them for clarity
+
+  # Append to complete dataset
+  brfss_complete <- bind_cols(brfss_complete, imp_cols)
+}
+
+```
+
+```{r, include=FALSE}
+##code taken from missing-values.R* ##
+
+library(dplyr)
+library(naniar)
+library(haven)
+library(tidyverse)
+library(ggplot2)
+library(visdat)
+
+# recode 'dont know' and 'refused' to NA
+recode_brfs_missing <- function(x) {
+  miss_codes <- c(7, 9, 77, 99)
+  replace(x, x %in% miss_codes, NA)
+}
+
+# define variable name
+tobacco_vars  <- c("SMOKE100", "SMOKDAY2", "USENOW3", "ECIGNOW2", "ECIGNOW3")
+
+cognitive_vars <- c("CIMEMLO1", "CDHOUS1", "CDSOCIA1")
+
+demo_vars <- c(
+  "MARITAL", "EDUCA", "VETERAN3", "EMPLOY1", "CHILDREN",
+  "INCOME3", "PREGNANT", "WEIGHT2", "_CRACE1", "_ASTHMS1",
+  "CAGEG", "_AGE80", "CHCOCNC1", "ALCDAY4", "MARJSMOK",
+  "GENHLTH", "MENTHLTH"
+)
+
+# figure out which of these exist in each year
+tobacco_vars_2023   <- intersect(tobacco_vars,   names(brfss_2023))
+tobacco_vars_2024   <- intersect(tobacco_vars,   names(brfss_2024))
+cognitive_vars_2023 <- intersect(cognitive_vars, names(brfss_2023))
+cognitive_vars_2024 <- intersect(cognitive_vars, names(brfss_2024))
+
+# recode missing for selected vars
+brfss_2023_missing <- brfss_2023 |>
+  mutate(
+    across(all_of(tobacco_vars_2023),   recode_brfs_missing),
+    across(all_of(cognitive_vars_2023), recode_brfs_missing),
+    `_SMOKER3` = replace(`_SMOKER3`, `_SMOKER3` == 9, NA)
+  )
+
+brfss_2024_missing <- brfss_2024 |>
+  mutate(
+    across(all_of(tobacco_vars_2024),   recode_brfs_missing),
+    across(all_of(cognitive_vars_2024), recode_brfs_missing),
+    `_SMOKER3` = replace(`_SMOKER3`, `_SMOKER3` == 9, NA)
+  )
+
+# only keep vars present in both years
+vars_all <- c(demo_vars, cognitive_vars, tobacco_vars)
+
+vars_2023 <- intersect(vars_all, names(brfss_2023_missing))
+vars_2024 <- intersect(vars_all, names(brfss_2024_missing))
+
+vars_both <- intersect(vars_2023, vars_2024)
+
+# combined 2023 and 2024
+combined_brfss <- bind_rows(
+  brfss_2023_missing|>
+    mutate(year = "2023") |>
+    select(year, all_of(vars_both)),
+  brfss_2024_missing|>
+    mutate(year = "2024") |>
+    select(year, all_of(vars_both))
+)
+# summary of missingness
+miss_summary <- combined_brfss |>
+  group_by(year) |>
+  miss_var_summary() |>
+  ungroup()
+
+
+# map variable to group
+var_domains <- tibble(
+  variable = vars_both,
+  domain   = case_when(
+    variable %in% demo_vars      ~ "Demographic",
+    variable %in% cognitive_vars ~ "Cognitive",
+    variable %in% tobacco_vars   ~ "Tobacco",
+    TRUE ~ "Other"
+  )
+)
+
+miss_summary <- miss_summary |>
+  left_join(var_domains, by = "variable") |>
+  mutate(
+    domain   = if_else(is.na(domain), "Other", domain),
+    pct_miss = as.numeric(pct_miss)
+  )
+```
+
+# Cleaning and Packaging the Missouri BRFSS Data
+
+## Introduction
+
+We developed an R package that provides cleaned 2023 and 2024 BRFSS
+datasets for the state of Missouri, focusing on the Cognitive Decline
+and Tobacco Use modules. We chose this project because accessing BRFSS
+data currently requires downloading and manually extracting large ZIP
+files from the CDC website, which is time-consuming and inconvenient.
+Our package is designed to make these data easily accessible and
+analysis-ready directly within R. In this project, we identify missing
+values in the Cognitive Decline and Tobacco Use modules, characterize
+the patterns and mechanisms of missingness, and impute missing values.
+Finally, we transform and tidy the data so that it is well structured
+and easy to use in a publicly available R package.
+
+## Dataset
+
+The BRFSS data for our project is found at this
+[link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC
+along with state health departments regularly conduct telephone surveys
+to collect this health-related data about U.S. residents. We downloaded
+the 2023 and 2024 data (most recent releases) in the SAS Transport
+Format, both provided in separate .zip files. Reading in these files can
+be easily accomplished with the help of the `haven` R package.
+
+To load the data:
+
+```{r, eval=FALSE}
+library(haven)
+
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
+```
+
+We filtered the dataset to only use records from the state of Missouri.
+Our original idea was to use Nebraska's data, but since it has limited
+topics, we chose our southeastern neighbors. The Missouri data included
+information on a wide range of topics, but we chose to focus on the
+**Cognitive Decline** and **Tobacco Use** modules, as well as important
+**Demographics**. We got rid of the rest of the columns (that weren't
+used in the missing value imputation either), and analyzed/cleaned those
+two.
+
+### Demographics
+
+For the Demographics dataset, we observe 18 different variables
+pertaining to demographics of the respondents. There are 14,528 rows of
+data containing observations. - `SEQNO`: Key of the Dataset - `MARITAL`:
+Marital Status - `EDUCA`: Education Level - `VETERAN3`: Veteran Status -
+`EMPLOY1`: Employment Status - `CHILDREN`: Number of Children in
+Household - `INCOME3`: Income Level - `PREGNANT`: Pregnancy Status -
+`WEIGHT2`: Reported Weight in Pounds - `CRACE1`: Child Non-Hispanic Race
+including Multiracial - `CAGEG`: Child age - `AGE80`: Age value
+(collapsed above 80) - `GENHLTH`: General Health - `MENTHLTH`: Number of
+Days Mental Health Not Good (out of the past month) - `CHCOCNC`:
+Melanoma or other types of cancer - `ALCDAY4`: Days in the past 30 had
+alcohol - `MARJSMOK`: Did you smoke marijuana or cannabis - `ASTHMS1`:
+Asthma Status
+
+### Cognitive Decline
+
+For the Cognitive Decline topic, we observe 5 different variables
+pertaining to cognitive decline. There are 14,528 rows of data
+containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
+Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
+of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
+`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
+
+### Tobacco Use
+
+For the Cognitive Decline topic, we observe 5 different variables
+pertaining to cognitive decline. There are 14,528 rows of data
+containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
+Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
+of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
+`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
+
+## Cleaning the Data
+
+-   `SEQNO`: Key of the Dataset
+-   `SMOKER3`: general smoking status
+-   `SMOKE100`: smoked at least 100 cigarettes
+-   `SMOKE100_IMP1`: 1st imputation of SMOKE100
+-   `SMOKE100_IMP2`: 2nd imputation of SMOKE100
+-   `SMOKE100_IMP3`: 3rd imputation of SMOKE100
+-   `ECIGNOW`: e-cigarettes usage
+-   `ECIGNOW_IMP1`: 1st imputation of ECIGNOW
+-   `ECIGNOW_IMP2`: 2nd imputation of ECIGNOW
+-   `ECIGNOW_IMP3`: 3rd imputation of ECIGNOW
+
+The main effort of our project went into cleaning the dataset, which
+grew to be quite the task. For starters, the dataset is *huge*, which is
+quite overwhelming to someone unfamiliar with the data. There is
+documentation in place, but it only makes analysis slightly easier.
+Combining two years' worth of data just makes the problem worse, as some
+of the column names didn't match up.
+
+The BRFSS data also naturally has lots of missing data. This is because,
+in each state, surveyors pick and choose only a handful of modules out
+of the wide variety of topics. This means that a state has missing
+values in the columns relating to all the other modules. Additionally,
+there are frequent missing values even in the columns relating to
+modules that a state was questioned on.
+
+These factors combined made cleaning the dataset a tough task but, more
+importantly, a necessary one. This turned into a 3-step process:
+investigating the missing values, imputing the missing values, and
+tidying the dataset.
+
+### Investigating Missing Values
+
+Before deciding how to handle missing data, we examined how often values
+were missing and what type of missingness might be present (MCAR, MAR,
+or MNAR).
+
+First, we summarized the extent of missing data for the tobacco,
+cognitive, and key demographic variables in the 2023 and 2024 Missouri
+samples.
+
+```{r, echo=FALSE, warning=FALSE}
+# missing variables visualization
+p_miss_bar <- ggplot(
+  miss_summary |> filter(domain != "Other"),
+  aes(
+    x   = as.numeric(pct_miss),
+    y   = fct_reorder(variable, as.numeric(pct_miss)),
+    fill = year
+  )
+) +
+  geom_col(
+    aes(x = 50),            
+    fill  = "grey80",        
+    colour = NA,
+    alpha = 0.3          
+  ) +
+  geom_col(position = "dodge", alpha = 1) +
+  facet_grid(domain ~ ., scales = "free_y", space = "free") +
+  labs(
+    title = "Percent missing by variable and year (2023 vs 2024)",
+    x     = "% missing",
+    y     = "Variable",
+    fill  = "Year"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 8)
+  )
+
+p_miss_bar
+```
+
+We found that several items had a large amount of missingness,
+especially in the cognitive module (`CDHOUS1`, `CDSOCIA1`), where more
+than 40–90% of responses were missing or not applicable. Because of this
+high level of missingness, we did not include these variables in the
+imputation models.
+
+```{r echo=FALSE}
+library(dplyr)
+miss_summary |>
+  filter(variable %in% c("CIMEMLO1", "CDHOUS1", "CDSOCIA1")) |>
+  arrange(variable, year) |>
+  select(year, variable, pct_miss)
+```
+
+We then formally tested whether the missing data could be considered
+Missing Completely At Random (MCAR) using Little’s MCAR test
+(`naniar::mcar_test`). We applied this test separately to the tobacco
+variables and the cognitive variables for both years. Below is an
+example of the MCAR test for the tobacco variables in 2023.
+
+```{r}
+library(naniar)
+# tobacco variables
+tobacco_vars <- c("SMOKE100", "SMOKDAY2", "USENOW3", "ECIGNOW2", "ECIGNOW3")
+
+# keep variables that exist in 2023
+tobacco_vars_2023 <- intersect(tobacco_vars, names(brfss_2023_missing))
+
+# MCAR test
+tobacco_2023 <- brfss_2023_missing |>
+  select(all_of(tobacco_vars_2023))
+
+mcar_tobacco_2023 <-mcar_test(tobacco_2023)
+mcar_tobacco_2023
+```
+
+In all cases, the MCAR test was highly significant (p \<
+`r mcar_tobacco_2023$p.value`), indicating strong evidence against MCAR.
+This suggests that missingness is related to observed or unobserved
+characteristics, and it supports the use of multiple imputation.
+
+### Imputing Missing Values
+
+After analyzing the missing values, we imputed three fields from our
+chosen modules:
+
+-   `SMOKE100`: Have you smoked at Least 100 Cigarettes
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9
+        (Refused)
+-   `ECIGNOW`: Do you now use e-cigarettes, or vaping products?
+    -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some
+        days); 4 (Not right now); 7 (Don't know); 9 (Refused)
+-   `CIMEMLO1`: Have you experienced difficulties with thinking or
+    memory that is happening more often or is getting worse?
+    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9
+        (Refused)
+
+Since values of 7 and 9 represent missing data in this context, we
+treated them as such by recoding them to `NA` prior to the imputation.
+
+The imputation method that we chose to use was **Predicted Mean Matching
+(PMM)**, implemented using the `mice` library. This is a reliable
+prediction strategy that maintains realism by preserving the original
+shape and spread of the data. The algorithm functions by identifying a
+small group of "donor" instances (we used the default of 5) that are
+statistically similar to the instance being imputed. Once those are
+identified, a random complete instance (meaning it has an observed value
+in the field that is being imputed) is selected to fill the gap.
+
+This approach ensures that the imputed value is an actual observed
+value, not just a generated average. In the case of this dataset, which
+consists of specific categorical integers, this detail is even more
+crucial. Using a different imputation methodology would have left us
+with nonsensical floating point numbers.
+
+The predictor fields that we used to impute these values were selected
+based on prior domain knowledge and our own hypotheses, incorporating a
+wide range of demographic, health, and family variables.
+
+Predictors:
+
+-   `MARITAL`: Marital Status
+-   `EDUCA`: Education Level
+-   `VETERAN3`: Veteran Status
+-   `EMPLOY1`: Employment Status
+-   `CHILDREN`: Number of Children in Household
+-   `INCOME3`: Income Level
+-   `PREGNANT`: Pregnancy Status
+-   `WEIGHT2`: Reported Weight in Pounds
+-   `CRACE1`: Child Non-Hispanic Race including Multiracial
+-   `ASTHMS1`: Asthma Status
+-   `CAGEG`: Child age
+-   `AGE80`: Age value (collapsed above 80)
+-   `CHCOCNC1`: Ever told you had melanoma or any other types of cancer
+-   `ALCDAY4`: Days in past 30 had alcoholic beverage
+-   `MARJSMOK`: Did you smoke marijuana or cannabis
+-   `GENHLTH`: General Health
+-   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
+    month)
+
+Using these predictors, we generated three imputed versions of each
+target column. We also retained the original column in the resulting
+dataset to allow users to choose which column version they preferred.
+
+To ensure the imputation process worked properly and did not skew the
+results, we analyzed the distributions of the original columns against
+to their imputed counterparts. A summary of these distributions is shown
+in the figure below:
+
+```{r, echo=FALSE, warning=FALSE}
+#
+# Visually analyzing imputed values
+#
+
+# SMOKE100
+p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("Original")
+p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# ECIGNOW
+p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("Original")
+p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# CIMEMLO1
+p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("Original")
+p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imputation 1")
+p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imputation 2")
+p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+
+# Plotting all together
+final_plot <- p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12
+final_plot + plot_layout(ncol = 4, nrow = 3)
+```
+
+The distributions of the imputed columns are extremely similar to their
+corresponding original distributions, accounting for the exclusion of
+the 7 and 9 values. These similarities suggest that the PMM imputation
+worked as intended. Although the imputation is complete, the dataset is
+not yet fully ready for use, as it still needs to be converted to a tidy
+format.
+
+### Tidying the Dataset
+
+To tidy the dataset, we first split up the new, complete BRFSS dataset
+into 3 applicable datasets: Demographics, CognitiveDecline, and
+TobaccoUse. The goal of this was to make the data segmented and easier
+to use, instead of just providing one large dataset.
+
+After splitting up the dataset, we verified that `SEQNO` is unique with
+in each year's BRFSS Missouri subset, and can use it as the primary key
+when splitting into multiple related tables. This was confirmed when the
+output revealed no duplicate SEQNO ID/numbers. This documents it as a
+single column key and normal form.
+
+### R Package
+
+Once the data was cleaned, the final step was to set up an R package so
+that others could easily import and use this data. The package includes
+the three resulting sub-datasets (`demographics`, `tobacco_use`,
+`cognitive_decline`), as well as the complete dataset
+(`missouri_brfss`). Users simply have to install the package and load
+the library to have access to these datasets. From there, further
+analysis can be done.
+
+The package website for further documentation is found
+[here](https://mfehr7.github.io/BRFSSMissouri/).
+
+### Example Usage
+
+To install and load the package:
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+remotes::install_github("mfehr7/BRFSSMissouri")
+library(BRFSSMissouri)
+```
+
+The datasets are automatically loaded in as global variables:
+
+```{r, eval=FALSE}
+# Complete dataset
+missouri_brfss
+
+# Sub-datasets
+demographics
+tobacco_use
+cognitive_decline
+```
+
+As an example analysis, this code looks at the average `SMOKE100` value
+(using `SMOKE100_IMP1`) among different ages.
+
+```{r}
+# Summary table
+smoke_by_age <- missouri_brfss %>%
+  group_by(AGE80) %>%
+  summarise(`AVG_SMOKE100` = mean(SMOKE100_IMP1))
+
+# Summary plot
+smoke_by_age %>%
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
+```
+
+A value of 1 indicates that a person *has* smoked 100 cigarettes, while
+a value of 2 indicates that a person *has not*. The trend seen in the
+plot is what you would expect, as cigarettes were more common for older
+generations growing up than they are now. Younger ages have an average
+closer to 2, since their generations have alternate, popular nicotine
+devices.
+
+## Conclusion
+
+In this project, we transformed raw BRFSS Missouri data into a clean,
+well-structured, and user-friendly R package that makes access easier to
+two important public health modules: Cognitive Decline and Tobacco Use.
+By downloading and cleaning the 2023 and 2024 datasets, we created a
+reproducible workflow that makes these large and complex data files
+available with a single function call. Our work addressed challenges
+such as inconsistent variable naming across years, missing values, and
+imputating missing values, while still allowing the usability of the
+original survey responses.
+
+Through MCAR testing, we confirmed that missingness patterns were not
+completely at random, and we used Predictive Mean Matching (PMM) to
+impute three fields. Plots showed that the PMM imputations closely
+reflected the original data distributions, showing that PMM worked well.
+After imputation, we reorganized the cleaned data into tidy seperate
+datasets (Demographics, CognitiveDecline, and TobaccoUse) built using
+SEQNO as a key. This structure makes the dataset easier to explore and
+analyze in future projects.
