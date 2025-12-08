@@ -269,48 +269,48 @@ two.
 
 For the Demographics dataset, we observe 18 different variables
 pertaining to demographics of the respondents. There are 14,528 rows of
-data containing observations. - `SEQNO`: Key of the Dataset - `MARITAL`:
-Marital Status - `EDUCA`: Education Level - `VETERAN3`: Veteran Status -
-`EMPLOY1`: Employment Status - `CHILDREN`: Number of Children in
-Household - `INCOME3`: Income Level - `PREGNANT`: Pregnancy Status -
-`WEIGHT2`: Reported Weight in Pounds - `CRACE1`: Child Non-Hispanic Race
-including Multiracial - `CAGEG`: Child age - `AGE80`: Age value
-(collapsed above 80) - `GENHLTH`: General Health - `MENTHLTH`: Number of
-Days Mental Health Not Good (out of the past month) - `CHCOCNC`:
-Melanoma or other types of cancer - `ALCDAY4`: Days in the past 30 had
-alcohol - `MARJSMOK`: Did you smoke marijuana or cannabis - `ASTHMS1`:
-Asthma Status
+data containing observations.
+
+- `SEQNO`: Key of the Dataset
+- `MARITAL`: Marital Status
+- `EDUCA`: Education Level
+- `VETERAN3`: Veteran Status
+- `EMPLOY1`: Employment Status
+- `CHILDREN`: Number of Children in Household
+- `INCOME3`: Income Level
+- `PREGNANT`: Pregnancy Status
+- `WEIGHT2`: Reported Weight in Pounds
+- `CRACE1`: Child Non-Hispanic Race including Multiracial
+- `CAGEG`: Child age
+- `AGE80`: Age value (collapsed above 80)
+- `GENHLTH`: General Health
+- `MENTHLTH`: Number of Days Mental Health Not Good (out of the past month)
+- `CHCOCNC`: Melanoma or other types of cancer
+- `ALCDAY4`: Days in the past 30 had alcohol
+- `MARJSMOK`: Did you smoke marijuana or cannabis
+- `ASTHMS1`: Asthma Status
 
 ### Cognitive Decline
 
-For the Cognitive Decline topic, we observe 5 different variables
+For the Cognitive Decline topic, we observe only 2 different variables
 pertaining to cognitive decline. There are 14,528 rows of data
-containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
-Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
-of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
-`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
+containing observations.
+
+- `SEQNO`: Key of the Dataset
+- `CIMEMLO1`: Difficulties with Thinking or Memory
 
 ### Tobacco Use
 
-For the Cognitive Decline topic, we observe 5 different variables
-pertaining to cognitive decline. There are 14,528 rows of data
-containing observations - `SEQNO`: Key of the Dataset - `CIMEMLO1`:
-Difficulties with Thinking or Memory - `CIMEMLO1_IMP1`: 1st imputation
-of CIMEMLO1 - `CIMEMLO1_IMP2`: 2nd imputation of CIMEMLO1 -
-`CIMEMLO1_IMP3`: 3rd imputation of CIMEMLO1
-
-## Cleaning the Data
+For the Tobacco Use topic, we observe 4 different variables
+pertaining to tobacco use. There are 14,528 rows of data
+containing observations.
 
 -   `SEQNO`: Key of the Dataset
 -   `SMOKER3`: general smoking status
 -   `SMOKE100`: smoked at least 100 cigarettes
--   `SMOKE100_IMP1`: 1st imputation of SMOKE100
--   `SMOKE100_IMP2`: 2nd imputation of SMOKE100
--   `SMOKE100_IMP3`: 3rd imputation of SMOKE100
 -   `ECIGNOW`: e-cigarettes usage
--   `ECIGNOW_IMP1`: 1st imputation of ECIGNOW
--   `ECIGNOW_IMP2`: 2nd imputation of ECIGNOW
--   `ECIGNOW_IMP3`: 3rd imputation of ECIGNOW
+
+## Cleaning the Data
 
 The main effort of our project went into cleaning the dataset, which
 grew to be quite the task. For starters, the dataset is *huge*, which is
@@ -419,14 +419,13 @@ characteristics, and it supports the use of multiple imputation.
 After analyzing the missing values, we imputed three fields from our
 chosen modules:
 
--   `SMOKE100`: Have you smoked at Least 100 Cigarettes
+-   `SMOKE100`
     -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9
         (Refused)
--   `ECIGNOW`: Do you now use e-cigarettes, or vaping products?
+-   `ECIGNOW`
     -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some
         days); 4 (Not right now); 7 (Don't know); 9 (Refused)
--   `CIMEMLO1`: Have you experienced difficulties with thinking or
-    memory that is happening more often or is getting worse?
+-   `CIMEMLO1`
     -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9
         (Refused)
 
@@ -454,24 +453,7 @@ wide range of demographic, health, and family variables.
 
 Predictors:
 
--   `MARITAL`: Marital Status
--   `EDUCA`: Education Level
--   `VETERAN3`: Veteran Status
--   `EMPLOY1`: Employment Status
--   `CHILDREN`: Number of Children in Household
--   `INCOME3`: Income Level
--   `PREGNANT`: Pregnancy Status
--   `WEIGHT2`: Reported Weight in Pounds
--   `CRACE1`: Child Non-Hispanic Race including Multiracial
--   `ASTHMS1`: Asthma Status
--   `CAGEG`: Child age
--   `AGE80`: Age value (collapsed above 80)
--   `CHCOCNC1`: Ever told you had melanoma or any other types of cancer
--   `ALCDAY4`: Days in past 30 had alcoholic beverage
--   `MARJSMOK`: Did you smoke marijuana or cannabis
--   `GENHLTH`: General Health
--   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
-    month)
+-   `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `CRACE1`, `ASTHMS1`, `CAGEG`, `AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH`
 
 Using these predictors, we generated three imputed versions of each
 target column. We also retained the original column in the resulting
@@ -524,8 +506,7 @@ into 3 applicable datasets: Demographics, CognitiveDecline, and
 TobaccoUse. The goal of this was to make the data segmented and easier
 to use, instead of just providing one large dataset.
 
-After splitting up the dataset, we verified that `SEQNO` is unique with
-in each year's BRFSS Missouri subset, and can use it as the primary key
+After splitting up the dataset, we verified that `SEQNO` is unique within each year's BRFSS Missouri subset, and can use it as the primary key
 when splitting into multiple related tables. This was confirmed when the
 output revealed no duplicate SEQNO ID/numbers. This documents it as a
 single column key and normal form.
