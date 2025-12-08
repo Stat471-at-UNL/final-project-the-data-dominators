@@ -225,17 +225,12 @@ miss_summary <- miss_summary |>
 
 ## Introduction
 
-We developed an R package that provides cleaned 2023 and 2024 BRFSS
-datasets for the state of Missouri, focusing on the Cognitive Decline
-and Tobacco Use modules. We chose this project because accessing BRFSS
-data currently requires downloading and manually extracting large ZIP
-files from the CDC website, which is time-consuming and inconvenient.
-Our package is designed to make these data easily accessible and
-analysis-ready directly within R. In this project, we identify missing
-values in the Cognitive Decline and Tobacco Use modules, characterize
-the patterns and mechanisms of missingness, and impute missing values.
-Finally, we transform and tidy the data so that it is well structured
-and easy to use in a publicly available R package.
+We developed an R package with cleaned 2023 and 2024 Missouri BRFSS
+data, focusing on the Cognitive Decline and Tobacco Use modules. Because
+BRFSS data currently requires downloading and extracting large ZIP files
+from the CDC website, our package makes the data directly accessible and
+ready to use in R. In this project, we investigate missing values,
+impute missing values, and tidy the data for use in a public R package.
 
 ## Dataset
 
@@ -271,24 +266,25 @@ For the Demographics dataset, we observe 18 different variables
 pertaining to demographics of the respondents. There are 14,528 rows of
 data containing observations.
 
-- `SEQNO`: Key of the Dataset
-- `MARITAL`: Marital Status
-- `EDUCA`: Education Level
-- `VETERAN3`: Veteran Status
-- `EMPLOY1`: Employment Status
-- `CHILDREN`: Number of Children in Household
-- `INCOME3`: Income Level
-- `PREGNANT`: Pregnancy Status
-- `WEIGHT2`: Reported Weight in Pounds
-- `CRACE1`: Child Non-Hispanic Race including Multiracial
-- `CAGEG`: Child age
-- `AGE80`: Age value (collapsed above 80)
-- `GENHLTH`: General Health
-- `MENTHLTH`: Number of Days Mental Health Not Good (out of the past month)
-- `CHCOCNC`: Melanoma or other types of cancer
-- `ALCDAY4`: Days in the past 30 had alcohol
-- `MARJSMOK`: Did you smoke marijuana or cannabis
-- `ASTHMS1`: Asthma Status
+-   `SEQNO`: Key of the Dataset
+-   `MARITAL`: Marital Status
+-   `EDUCA`: Education Level
+-   `VETERAN3`: Veteran Status
+-   `EMPLOY1`: Employment Status
+-   `CHILDREN`: Number of Children in Household
+-   `INCOME3`: Income Level
+-   `PREGNANT`: Pregnancy Status
+-   `WEIGHT2`: Reported Weight in Pounds
+-   `CRACE1`: Child Non-Hispanic Race including Multiracial
+-   `CAGEG`: Child age
+-   `AGE80`: Age value (collapsed above 80)
+-   `GENHLTH`: General Health
+-   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
+    month)
+-   `CHCOCNC`: Melanoma or other types of cancer
+-   `ALCDAY4`: Days in the past 30 had alcohol
+-   `MARJSMOK`: Did you smoke marijuana or cannabis
+-   `ASTHMS1`: Asthma Status
 
 ### Cognitive Decline
 
@@ -296,14 +292,13 @@ For the Cognitive Decline topic, we observe only 2 different variables
 pertaining to cognitive decline. There are 14,528 rows of data
 containing observations.
 
-- `SEQNO`: Key of the Dataset
-- `CIMEMLO1`: Difficulties with Thinking or Memory
+-   `SEQNO`: Key of the Dataset
+-   `CIMEMLO1`: Difficulties with Thinking or Memory
 
 ### Tobacco Use
 
-For the Tobacco Use topic, we observe 4 different variables
-pertaining to tobacco use. There are 14,528 rows of data
-containing observations.
+For the Tobacco Use topic, we observe 4 different variables pertaining
+to tobacco use. There are 14,528 rows of data containing observations.
 
 -   `SEQNO`: Key of the Dataset
 -   `SMOKER3`: general smoking status
@@ -333,13 +328,8 @@ tidying the dataset.
 
 ### Investigating Missing Values
 
-Before deciding how to handle missing data, we examined how often values
-were missing and what type of missingness might be present (MCAR, MAR,
-or MNAR).
-
-First, we summarized the extent of missing data for the tobacco,
-cognitive, and key demographic variables in the 2023 and 2024 Missouri
-samples.
+We first examine the extent of missing data for the tobacco, cognitive,
+and key demographic variables in the 2023 and 2024 Missouri samples.
 
 ```{r, echo=FALSE, warning=FALSE}
 # missing variables visualization
@@ -373,11 +363,9 @@ p_miss_bar <- ggplot(
 p_miss_bar
 ```
 
-We found that several items had a large amount of missingness,
-especially in the cognitive module (`CDHOUS1`, `CDSOCIA1`), where more
-than 40–90% of responses were missing or not applicable. Because of this
-high level of missingness, we did not include these variables in the
-imputation models.
+Several items had a large amount of missing data, especially `CDHOUS1`
+and `CDSOCIA1` with over 40–90% missing or NA, so we excluded them from
+the imputation models.
 
 ```{r echo=FALSE}
 library(dplyr)
@@ -387,11 +375,10 @@ miss_summary |>
   select(year, variable, pct_miss)
 ```
 
-We then formally tested whether the missing data could be considered
-Missing Completely At Random (MCAR) using Little’s MCAR test
-(`naniar::mcar_test`). We applied this test separately to the tobacco
-variables and the cognitive variables for both years. Below is an
-example of the MCAR test for the tobacco variables in 2023.
+We then tested whether the data were Missing Completely At Random (MCAR)
+using Little’s MCAR test (`naniar::mcar_test`), applied separately to
+tobacco and cognitive variables in each year. Below is an example of the
+MCAR test for tobacco 2023.
 
 ```{r}
 library(naniar)
@@ -409,10 +396,9 @@ mcar_tobacco_2023 <-mcar_test(tobacco_2023)
 mcar_tobacco_2023
 ```
 
-In all cases, the MCAR test was highly significant (p \<
-`r mcar_tobacco_2023$p.value`), indicating strong evidence against MCAR.
-This suggests that missingness is related to observed or unobserved
-characteristics, and it supports the use of multiple imputation.
+In all cases, Little’s MCAR test was highly significant(p \<
+`r mcar_tobacco_2023$p.value`), providing strong evidence against MCAR
+and supporting the use of multiple imputation.
 
 ### Imputing Missing Values
 
@@ -453,7 +439,9 @@ wide range of demographic, health, and family variables.
 
 Predictors:
 
--   `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`, `PREGNANT`, `WEIGHT2`, `CRACE1`, `ASTHMS1`, `CAGEG`, `AGE80`, `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH`
+-   `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`,
+    `PREGNANT`, `WEIGHT2`, `CRACE1`, `ASTHMS1`, `CAGEG`, `AGE80`,
+    `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH`
 
 Using these predictors, we generated three imputed versions of each
 target column. We also retained the original column in the resulting
@@ -506,10 +494,11 @@ into 3 applicable datasets: Demographics, CognitiveDecline, and
 TobaccoUse. The goal of this was to make the data segmented and easier
 to use, instead of just providing one large dataset.
 
-After splitting up the dataset, we verified that `SEQNO` is unique within each year's BRFSS Missouri subset, and can use it as the primary key
-when splitting into multiple related tables. This was confirmed when the
-output revealed no duplicate SEQNO ID/numbers. This documents it as a
-single column key and normal form.
+After splitting up the dataset, we verified that `SEQNO` is unique
+within each year's BRFSS Missouri subset, and can use it as the primary
+key when splitting into multiple related tables. This was confirmed when
+the output revealed no duplicate SEQNO ID/numbers. This documents it as
+a single column key and normal form.
 
 ### R Package
 
