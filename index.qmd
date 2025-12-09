@@ -1,5 +1,15 @@
 ---
-format: html
+fontsize: 10pt
+
+format: 
+  pdf:
+    classoption: [twocolumn]
+    geometry: [margin=.9in]
+    include-in-header:
+      text: |
+        \usepackage{fvextra}
+        \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+    linestretch: 1.5
 editor: 
   markdown: 
     wrap: 72
@@ -32,7 +42,7 @@ brfss_2024 %>%
     across(everything(), ~ sum(!is.na(.)))
   ) %>%
   pivot_longer(everything(), names_to = "variable", values_to = "n_na") %>%
-  filter(n_na != 0) %>% view()
+  filter(n_na != 0)
 
 # Selecting only the columns that we are going to focus on (this is just a start, might add/drop)
 brfss_2024_tob_cog <- brfss_2024 %>%
@@ -238,11 +248,9 @@ The BRFSS data for our project is found at this
 [link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC
 along with state health departments regularly conduct telephone surveys
 to collect this health-related data about U.S. residents. We downloaded
-the 2023 and 2024 data (most recent releases) in the SAS Transport
+the 2023 and 2024 data in the SAS Transport
 Format, both provided in separate .zip files. Reading in these files can
-be easily accomplished with the help of the `haven` R package.
-
-To load the data:
+be accomplished:
 
 ```{r, eval=FALSE}
 library(haven)
@@ -251,13 +259,10 @@ brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 r
 brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
 ```
 
-We filtered the dataset to only use records from the state of Missouri.
-Our original idea was to use Nebraska's data, but since it has limited
-topics, we chose our southeastern neighbors. The Missouri data included
+We filtered the dataset to only use records from the state of Missouri. The Missouri data included
 information on a wide range of topics, but we chose to focus on the
 **Cognitive Decline** and **Tobacco Use** modules, as well as important
-**Demographics**. We got rid of the rest of the columns (that weren't
-used in the missing value imputation either), and analyzed/cleaned those
+**Demographics**. We removed the rest of the non-related columns, and analyzed/cleaned those
 two.
 
 ### Demographics
@@ -281,7 +286,7 @@ data containing observations.
 -   `GENHLTH`: General Health
 -   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
     month)
--   `CHCOCNC`: Melanoma or other types of cancer
+-   `CHCOCNC1`: Melanoma or other types of cancer
 -   `ALCDAY4`: Days in the past 30 had alcohol
 -   `MARJSMOK`: Did you smoke marijuana or cannabis
 -   `ASTHMS1`: Asthma Status
@@ -307,24 +312,7 @@ to tobacco use. There are 14,528 rows of data containing observations.
 
 ## Cleaning the Data
 
-The main effort of our project went into cleaning the dataset, which
-grew to be quite the task. For starters, the dataset is *huge*, which is
-quite overwhelming to someone unfamiliar with the data. There is
-documentation in place, but it only makes analysis slightly easier.
-Combining two years' worth of data just makes the problem worse, as some
-of the column names didn't match up.
-
-The BRFSS data also naturally has lots of missing data. This is because,
-in each state, surveyors pick and choose only a handful of modules out
-of the wide variety of topics. This means that a state has missing
-values in the columns relating to all the other modules. Additionally,
-there are frequent missing values even in the columns relating to
-modules that a state was questioned on.
-
-These factors combined made cleaning the dataset a tough task but, more
-importantly, a necessary one. This turned into a 3-step process:
-investigating the missing values, imputing the missing values, and
-tidying the dataset.
+The BRFSS data comes with lots of missing data, as well an overwhelming structure. In response, the cleaning process was naturally split up into a 3-step process: investigating the missing values, imputing the missing values, and tidying the dataset.
 
 ### Investigating Missing Values
 
@@ -355,7 +343,6 @@ p_miss_bar <- ggplot(
     y     = "Variable",
     fill  = "Year"
   ) +
-  theme_minimal() +
   theme(
     axis.text.y = element_text(size = 8)
   )
@@ -366,14 +353,6 @@ p_miss_bar
 Several items had a large amount of missing data, especially `CDHOUS1`
 and `CDSOCIA1` with over 40–90% missing or NA, so we excluded them from
 the imputation models.
-
-```{r echo=FALSE}
-library(dplyr)
-miss_summary |>
-  filter(variable %in% c("CIMEMLO1", "CDHOUS1", "CDSOCIA1")) |>
-  arrange(variable, year) |>
-  select(year, variable, pct_miss)
-```
 
 We then tested whether the data were Missing Completely At Random (MCAR)
 using Little’s MCAR test (`naniar::mcar_test`), applied separately to
@@ -506,9 +485,8 @@ Once the data was cleaned, the final step was to set up an R package so
 that others could easily import and use this data. The package includes
 the three resulting sub-datasets (`demographics`, `tobacco_use`,
 `cognitive_decline`), as well as the complete dataset
-(`missouri_brfss`). Users simply have to install the package and load
-the library to have access to these datasets. From there, further
-analysis can be done.
+(`missouri_brfss`). Users can easily install the package and load
+the library to have access to these datasets.
 
 The package website for further documentation is found
 [here](https://mfehr7.github.io/BRFSSMissouri/).
@@ -534,18 +512,22 @@ tobacco_use
 cognitive_decline
 ```
 
-As an example analysis, this code looks at the average `SMOKE100` value
-(using `SMOKE100_IMP1`) among different ages.
+As an example analysis, this code looks at the average `SMOKE100` value among different ages, with the averages using the different imputations overlay-ed.
 
 ```{r}
 # Summary table
 smoke_by_age <- missouri_brfss %>%
   group_by(AGE80) %>%
-  summarise(`AVG_SMOKE100` = mean(SMOKE100_IMP1))
+  summarise(
+    `AVG_SMOKE100` = mean(SMOKE100, na.rm = TRUE),
+    `AVG_SMOKE100_IMP1` = mean(SMOKE100_IMP1),
+    `AVG_SMOKE100_IMP2` = mean(SMOKE100_IMP2),
+    `AVG_SMOKE100_IMP3` = mean(SMOKE100_IMP3)
+  )
 
 # Summary plot
 smoke_by_age %>%
-  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity") + geom_point(aes(y = AVG_SMOKE100_IMP1, color = "Imputation 1")) + geom_point(aes(y = AVG_SMOKE100_IMP2, color = "Imputation 2")) + geom_point(aes(y = AVG_SMOKE100_IMP3, color = "Imputation 3"))
 ```
 
 A value of 1 indicates that a person *has* smoked 100 cigarettes, while
@@ -554,6 +536,9 @@ plot is what you would expect, as cigarettes were more common for older
 generations growing up than they are now. Younger ages have an average
 closer to 2, since their generations have alternate, popular nicotine
 devices.
+
+Furthermore, the averages of the imputed variables are extremely similar, following
+the same trend, providing additional confirmation in the chosen imputation method.
 
 ## Conclusion
 
