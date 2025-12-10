@@ -272,33 +272,33 @@ We observe 18 different variables
 pertaining to demographics of the respondents. There are 14,528 rows of
 data containing observations.
 
--   `SEQNO`: Key of the Dataset
--   `MARITAL`: Marital Status
--   `EDUCA`: Education Level
--   `VETERAN3`: Veteran Status
--   `EMPLOY1`: Employment Status
--   `CHILDREN`: Number of Children in Household
--   `INCOME3`: Income Level
--   `PREGNANT`: Pregnancy Status
--   `WEIGHT2`: Reported Weight in Pounds
--   `CRACE1`: Child Non-Hispanic Race including Multiracial
+-   `SEQNO`: Key of the dataset
+-   `MARITAL`: Marital status
+-   `EDUCA`: Education level
+-   `VETERAN3`: Veteran status
+-   `EMPLOY1`: Employment status
+-   `CHILDREN`: Number of children in household
+-   `INCOME3`: Income level
+-   `PREGNANT`: Pregnancy status
+-   `WEIGHT2`: Reported weight in pounds
+-   `CRACE1`: Child non-hispanic race including multiracial
 -   `CAGEG`: Child age
 -   `AGE80`: Age value (collapsed above 80)
--   `GENHLTH`: General Health
--   `MENTHLTH`: Number of Days Mental Health Not Good (out of the past
+-   `GENHLTH`: General health
+-   `MENTHLTH`: Number of days mental health not good (out of the past
     month)
 -   `CHCOCNC1`: Melanoma or other types of cancer
 -   `ALCDAY4`: Days in the past 30 had alcohol
 -   `MARJSMOK`: Did you smoke marijuana or cannabis
--   `ASTHMS1`: Asthma Status
+-   `ASTHMS1`: Asthma status
 
 ### Cognitive Decline
 
 For the cognitive decline topic, we observe 4 variables. There are 14,528 rows of data
 containing observations.
 
--   `SEQNO`: Key of the Dataset
--   `CIMEMLO1`: Difficulties with Thinking or Memory
+-   `SEQNO`: Key of the dataset
+-   `CIMEMLO1`: Difficulties with thinking or memory
 -   `CDHOUS1`: Given up day-to-day chores due to thinking or memory
 -   `CDSOCIA1`: Difficulties with thinking or memory interfering with work or social activities
 
@@ -306,7 +306,7 @@ containing observations.
 
 For the tobacco use topic, we observe 4 variables. There are 14,528 rows of data containing observations.
 
--   `SEQNO`: Key of the Dataset
+-   `SEQNO`: Key of the dataset
 -   `SMOKER3`: General smoking status
 -   `SMOKE100`: Smoked at least 100 cigarettes
 -   `ECIGNOW`: E-cigarettes usage
