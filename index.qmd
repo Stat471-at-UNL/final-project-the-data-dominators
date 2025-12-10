@@ -1,5 +1,5 @@
 ---
-fontsize: 10pt
+fontsize: 9pt
 
 format: 
   pdf:
@@ -9,7 +9,7 @@ format:
       text: |
         \usepackage{fvextra}
         \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
-    linestretch: 1.5
+    linestretch: 1
 editor: 
   markdown: 
     wrap: 72
@@ -235,7 +235,7 @@ miss_summary <- miss_summary |>
 
 ## Introduction
 
-We developed an R package with cleaned 2023 and 2024 Missouri BRFSS
+We developed an R package with cleaned 2023 and 2024 Missouri Behavioral Risk Factor Surveillance System (BRFSS)
 data, focusing on the Cognitive Decline and Tobacco Use modules. Because
 BRFSS data currently requires downloading and extracting large ZIP files
 from the CDC website, our package makes the data directly accessible and
@@ -249,8 +249,9 @@ The BRFSS data for our project is found at this
 along with state health departments regularly conduct telephone surveys
 to collect this health-related data about U.S. residents. We downloaded
 the 2023 and 2024 data in the SAS Transport
-Format, both provided in separate .zip files. Reading in these files can
-be accomplished:
+Format, both provided in separate .zip files.
+
+Reading these files into R can be easily accomplished:
 
 ```{r, eval=FALSE}
 library(haven)
@@ -263,11 +264,11 @@ We filtered the dataset to only use records from the state of Missouri. The Miss
 information on a wide range of topics, but we chose to focus on the
 **Cognitive Decline** and **Tobacco Use** modules, as well as important
 **Demographics**. We removed the rest of the non-related columns, and analyzed/cleaned those
-two.
+two modules.
 
 ### Demographics
 
-For the Demographics dataset, we observe 18 different variables
+We observe 18 different variables
 pertaining to demographics of the respondents. There are 14,528 rows of
 data containing observations.
 
@@ -293,30 +294,30 @@ data containing observations.
 
 ### Cognitive Decline
 
-For the Cognitive Decline topic, we observe only 2 different variables
-pertaining to cognitive decline. There are 14,528 rows of data
+For the cognitive decline topic, we observe 4 variables. There are 14,528 rows of data
 containing observations.
 
 -   `SEQNO`: Key of the Dataset
 -   `CIMEMLO1`: Difficulties with Thinking or Memory
+-   `CDHOUS1`: Given up day-to-day chores due to thinking or memory
+-   `CDSOCIA1`: Difficulties with thinking or memory interfering with work or social activities
 
 ### Tobacco Use
 
-For the Tobacco Use topic, we observe 4 different variables pertaining
-to tobacco use. There are 14,528 rows of data containing observations.
+For the tobacco use topic, we observe 4 variables. There are 14,528 rows of data containing observations.
 
 -   `SEQNO`: Key of the Dataset
--   `SMOKER3`: general smoking status
--   `SMOKE100`: smoked at least 100 cigarettes
--   `ECIGNOW`: e-cigarettes usage
+-   `SMOKER3`: General smoking status
+-   `SMOKE100`: Smoked at least 100 cigarettes
+-   `ECIGNOW`: E-cigarettes usage
 
 ## Cleaning the Data
 
-The BRFSS data comes with lots of missing data, as well an overwhelming structure. In response, the cleaning process was naturally split up into a 3-step process: investigating the missing values, imputing the missing values, and tidying the dataset.
+The BRFSS data comes with lots of missing values, as well an overwhelming structure. In response, the cleaning process was naturally split up into a 3-step process: investigating the missing values, imputing the missing values, and tidying the dataset.
 
 ### Investigating Missing Values
 
-We first examine the extent of missing data for the tobacco, cognitive,
+We first examine the extent of missing data for the tobacco, cognitive decline,
 and key demographic variables in the 2023 and 2024 Missouri samples.
 
 ```{r, echo=FALSE, warning=FALSE}
@@ -350,9 +351,9 @@ p_miss_bar <- ggplot(
 p_miss_bar
 ```
 
-Several items had a large amount of missing data, especially `CDHOUS1`
-and `CDSOCIA1` with over 40–90% missing or NA, so we excluded them from
-the imputation models.
+Several items had a large proportion of missing data, especially `CDHOUS1`
+and `CDSOCIA1` with over 85% missing, so we excluded them from
+the final imputation models.
 
 We then tested whether the data were Missing Completely At Random (MCAR)
 using Little’s MCAR test (`naniar::mcar_test`), applied separately to
@@ -385,13 +386,13 @@ After analyzing the missing values, we imputed three fields from our
 chosen modules:
 
 -   `SMOKE100`
-    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't Know); 9
+    -   Values: 1 (Yes); 2 (No); 7 (Don't Know); 9
         (Refused)
 -   `ECIGNOW`
-    -   The values it takes on are: 1 (Never); 2 (Every day); 3 (Some
+    -   Values: 1 (Never); 2 (Every day); 3 (Some
         days); 4 (Not right now); 7 (Don't know); 9 (Refused)
 -   `CIMEMLO1`
-    -   The values it takes on are: 1 (Yes); 2 (No); 7 (Don't know); 9
+    -   Values: 1 (Yes); 2 (No); 7 (Don't know); 9
         (Refused)
 
 Since values of 7 and 9 represent missing data in this context, we
@@ -427,44 +428,49 @@ target column. We also retained the original column in the resulting
 dataset to allow users to choose which column version they preferred.
 
 To ensure the imputation process worked properly and did not skew the
-results, we analyzed the distributions of the original columns against
-to their imputed counterparts. A summary of these distributions is shown
+results, we analyzed the distributions of the original columns against their imputed counterparts. A summary of these distributions is shown
 in the figure below:
 
 ```{r, echo=FALSE, warning=FALSE}
+
 #
 # Visually analyzing imputed values
 #
 
 # SMOKE100
 p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("Original")
-p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imputation 1")
-p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imputation 2")
-p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imp 3")
 
 # ECIGNOW
 p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("Original")
-p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imputation 1")
-p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imputation 2")
-p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imp 3")
 
 # CIMEMLO1
 p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("Original")
-p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imputation 1")
-p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imputation 2")
-p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imputation 3")
+p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imp 3")
 
 # Plotting all together
 final_plot <- p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12
-final_plot + plot_layout(ncol = 4, nrow = 3)
+final_plot + plot_layout(ncol = 4, nrow = 3) & 
+  theme_minimal(base_size = 8) & 
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank()
+  )
 ```
 
 The distributions of the imputed columns are extremely similar to their
 corresponding original distributions, accounting for the exclusion of
 the 7 and 9 values. These similarities suggest that the PMM imputation
-worked as intended. Although the imputation is complete, the dataset is
-not yet fully ready for use, as it still needs to be converted to a tidy
-format.
+worked as intended.
 
 ### Tidying the Dataset
 
@@ -476,7 +482,7 @@ to use, instead of just providing one large dataset.
 After splitting up the dataset, we verified that `SEQNO` is unique
 within each year's BRFSS Missouri subset, and can use it as the primary
 key when splitting into multiple related tables. This was confirmed when
-the output revealed no duplicate SEQNO ID/numbers. This documents it as
+the output revealed no duplicates in `SEQNO`. This documents it as
 a single column key and normal form.
 
 ### R Package
@@ -484,7 +490,7 @@ a single column key and normal form.
 Once the data was cleaned, the final step was to set up an R package so
 that others could easily import and use this data. The package includes
 the three resulting sub-datasets (`demographics`, `tobacco_use`,
-`cognitive_decline`), as well as the complete dataset
+`cognitive_decline`), as well as the full dataset
 (`missouri_brfss`). Users can easily install the package and load
 the library to have access to these datasets.
 
@@ -512,7 +518,7 @@ tobacco_use
 cognitive_decline
 ```
 
-As an example analysis, this code looks at the average `SMOKE100` value among different ages, with the averages using the different imputations overlay-ed.
+As an example, this code looks at the average `SMOKE100` value among different ages, with the averages of the imputations overlaid.
 
 ```{r}
 # Summary table
@@ -527,7 +533,11 @@ smoke_by_age <- missouri_brfss %>%
 
 # Summary plot
 smoke_by_age %>%
-  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity") + geom_point(aes(y = AVG_SMOKE100_IMP1, color = "Imputation 1")) + geom_point(aes(y = AVG_SMOKE100_IMP2, color = "Imputation 2")) + geom_point(aes(y = AVG_SMOKE100_IMP3, color = "Imputation 3"))
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) +
+  geom_bar(stat = "identity") +
+  geom_point(aes(y = AVG_SMOKE100_IMP1, color = "Imputation 1")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP2, color = "Imputation 2")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP3, color = "Imputation 3"))
 ```
 
 A value of 1 indicates that a person *has* smoked 100 cigarettes, while
@@ -538,25 +548,25 @@ closer to 2, since their generations have alternate, popular nicotine
 devices.
 
 Furthermore, the averages of the imputed variables are extremely similar, following
-the same trend, providing additional confirmation in the chosen imputation method.
+the same trend, providing us confidence in the chosen imputation method.
 
 ## Conclusion
 
 In this project, we transformed raw BRFSS Missouri data into a clean,
-well-structured, and user-friendly R package that makes access easier to
+well-structured, and user-friendly R package. This makes it easier to access
 two important public health modules: Cognitive Decline and Tobacco Use.
 By downloading and cleaning the 2023 and 2024 datasets, we created a
 reproducible workflow that makes these large and complex data files
 available with a single function call. Our work addressed challenges
 such as inconsistent variable naming across years, missing values, and
-imputating missing values, while still allowing the usability of the
+imputating missing values, while still allowing the usage of the
 original survey responses.
 
 Through MCAR testing, we confirmed that missingness patterns were not
-completely at random, and we used Predictive Mean Matching (PMM) to
-impute three fields. Plots showed that the PMM imputations closely
-reflected the original data distributions, showing that PMM worked well.
-After imputation, we reorganized the cleaned data into tidy seperate
-datasets (Demographics, CognitiveDecline, and TobaccoUse) built using
-SEQNO as a key. This structure makes the dataset easier to explore and
+completely at random, subsequently using PMM to
+impute three fields. Plots showed that the imputations closely
+reflected the original data distributions, suggesting that PMM worked well.
+After imputation, we reorganized the cleaned data into separate tidy
+datasets (Demographics, CognitiveDecline, and TobaccoUse) using
+`SEQNO` as a key. This structure makes the dataset easier to explore and
 analyze in future projects.
