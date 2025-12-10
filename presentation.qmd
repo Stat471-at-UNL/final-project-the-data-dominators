@@ -264,4 +264,32 @@ generations growing up than they are now. Younger ages have an average
 closer to 2, since their generations have alternate, popular nicotine
 devices.
 
+
+# Conclusion
+-In this project, we transformed raw BRFSS Missouri data into a clean,
+well-structured, and user-friendly R package that makes access easier to
+two important public health modules: Cognitive Decline and Tobacco Use.
+
+-By downloading and cleaning the 2023 and 2024 datasets, we created a
+reproducible workflow that makes these large and complex data files
+available with a single function call. 
+
+-Our work addressed challenges
+such as inconsistent variable naming across years, missing values, and
+imputating missing values, while still allowing the usability of the
+original survey responses.
+
+## Conclusion
+-Through MCAR testing, we confirmed that missingness patterns were not
+completely at random, and we used Predictive Mean Matching (PMM) to
+impute three fields.
+
+-Plots showed that the PMM imputations closely
+reflected the original data distributions, showing that PMM worked well.
+
+-After imputation, we reorganized the cleaned data into tidy seperate
+datasets (Demographics, CognitiveDecline, and TobaccoUse) built using
+SEQNO as a key. This structure makes the dataset easier to explore and
+analyze in future projects.
+
 # Questions
