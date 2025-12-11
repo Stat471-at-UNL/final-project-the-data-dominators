@@ -247,6 +247,15 @@ miss_summary <- miss_summary |>
 - Conclusion
 - Questions
 
+# Introduction
+- 2023 & 2024 Missouri BRFSS: Cognitive Decline & Tobacco Use 
+- Problem: large CDC ZIP files, manual extraction
+- Goal: R package with cleaned, ready-to-use data in R
+- Tasks: 
+  - Investigate missingness
+  - Impute missing values
+  - Tidy & document datasets for public use
+
 # Dataset
 
 - BRFSS Data
