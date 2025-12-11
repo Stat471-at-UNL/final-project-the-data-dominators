@@ -465,17 +465,15 @@ final_plot + plot_layout(ncol = 4, nrow = 3) &
 
 ## Tidying the Dataset
 
-To tidy the dataset, we first split up the new, complete BRFSS dataset
-into 3 applicable datasets: 
-Demographics, CognitiveDecline, and
-TobaccoUse. The goal of this was to make the data segmented and easier
-to use, instead of just providing one large dataset.
+- After imputation, we reorganized the Missouri BRFSS data into three topic-based datasets — **Demographics**, **CognitiveDecline**, and **TobaccoUse** to make the
+  dataset more segmented and easier to use.
 
-After splitting up the dataset, we verified that `SEQNO` is unique
-within each year's BRFSS Missouri subset, and can use it as the primary
-key when splitting into multiple related tables. This was confirmed when
-the output revealed no duplicates in `SEQNO`. This documents it as
-a single column key and normal form.
+- We verified **`SEQNO`** as a valid key by checking for duplicates.
+
+- The result showed **0** repeated `SEQNO` values, confirming it uniquely identifies each respondent.
+
+- Because each table has one row per respondent, each variable appears in its own column, and all non-key variables depend only on `SEQNO`, the datasets satisfy normal form requirements.
+
 # R Package
 
 ## R Package
