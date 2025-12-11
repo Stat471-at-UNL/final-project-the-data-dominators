@@ -398,7 +398,7 @@ chosen modules:
 Since values of 7 and 9 represent missing data in this context, we
 treated them as such by recoding them to `NA` prior to the imputation.
 
-The imputation method that we chose to use was **Predicted Mean Matching
+The imputation method that we chose to use was **Predictive Mean Matching
 (PMM)**, implemented using the `mice` library. This is a reliable
 prediction strategy that maintains realism by preserving the original
 shape and spread of the data. The algorithm functions by identifying a
@@ -438,19 +438,19 @@ in the figure below:
 #
 
 # SMOKE100
-p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("Original")
+p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("SMOKE100 Original")
 p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imp 1")
 p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imp 2")
 p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imp 3")
 
 # ECIGNOW
-p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("Original")
+p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("ECIGNOW Original")
 p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imp 1")
 p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imp 2")
 p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imp 3")
 
 # CIMEMLO1
-p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("Original")
+p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("CIMEMLO1 Original")
 p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imp 1")
 p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imp 2")
 p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imp 3")

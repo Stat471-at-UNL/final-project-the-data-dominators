@@ -258,7 +258,9 @@ miss_summary <- miss_summary |>
 
 # Dataset
 
-- BRFSS Data
+## BRFSS Dataset
+
+- **Behavioral Risk Factor Surveillance System (BRFSS)**
   - The CDC regularly conduct telephone surveys to collect this health-related data about U.S. residents
   - Time period: 2023 and 2024
 - We filtered the dataset to only use records from the state of Missouri.
@@ -398,20 +400,81 @@ mcar_tobacco_2023
 
 ## Imputing Missing Values
 
+Imputed three fields from our chosen modules:
+
+-   `SMOKE100`: Have you smoked 100 cigarettes
+-   `ECIGNOW`: Current E-cigarettes usage
+-   `CIMEMLO1`: Recent difficulties with thinking or memory
+
+Values of 7 (Don't Know) and 9 (Refused) were treated as `NA`.
+
+## Imputation Method
+
+- **Predictive Mean Matching (PMM)** for imputation
+  - Identifies a small group of "donor" instances that are
+similar to the instance being imputed
+  - Selects a random complete instance to fill the gap.
+- Maintains realism by preserving the original shape and spread of the data
+
+## Imputation Method
+
+- Predictors:
+  -   `MARITAL`, `EDUCA`, `VETERAN3`, `EMPLOY1`, `CHILDREN`, `INCOME3`,
+    `PREGNANT`, `WEIGHT2`, `CRACE1`, `ASTHMS1`, `CAGEG`, `AGE80`,
+    `CHCOCNC1`, `ALCDAY4`, `MARJSMOK`, `GENHLTH`, `MENTHLTH`
+- We generated three imputed versions of each target column
+  - Retained the original column in the resulting dataset
+
+## Distributions of Imputed Columns
+
+```{r, echo=FALSE, warning=FALSE}
+
+#
+# Visually analyzing imputed values
+#
+
+# SMOKE100
+p1 <- brfss_complete %>% ggplot(aes(x = SMOKE100)) + geom_bar() + ggtitle("SMOKE100 Original")
+p2 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p3 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p4 <- brfss_complete %>% ggplot(aes(x = SMOKE100_IMP3)) + geom_bar() + ggtitle("Imp 3")
+
+# ECIGNOW
+p5 <- brfss_complete %>% ggplot(aes(x = ECIGNOW)) + geom_bar() + ggtitle("ECIGNOW Original")
+p6 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p7 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p8 <- brfss_complete %>% ggplot(aes(x = ECIGNOW_IMP3)) + geom_bar() + ggtitle("Imp 3")
+
+# CIMEMLO1
+p9 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1)) + geom_bar() + ggtitle("CIMEMLO1 Original")
+p10 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP1)) + geom_bar() + ggtitle("Imp 1")
+p11 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP2)) + geom_bar() + ggtitle("Imp 2")
+p12 <- brfss_complete %>% ggplot(aes(x = CIMEMLO1_IMP3)) + geom_bar() + ggtitle("Imp 3")
+
+# Plotting all together
+final_plot <- p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9 + p10 + p11 + p12
+final_plot + plot_layout(ncol = 4, nrow = 3) & 
+  theme_minimal(base_size = 8) & 
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+```
+
 ## Tidying the Dataset
 
 # R Package
 
+## R Package
+
 To install and load the package:
 
-```{r, results='hide', message=FALSE, warning=FALSE}
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 remotes::install_github("mfehr7/BRFSSMissouri")
 library(BRFSSMissouri)
-```
 
-The datasets are automatically loaded in as global variables:
-
-```{r, eval=FALSE}
 # Complete dataset
 missouri_brfss
 
@@ -423,28 +486,53 @@ cognitive_decline
 
 ## Example Usage
 
-As an example analysis, this code looks at the average `SMOKE100` value
-(using `SMOKE100_IMP1`) among different ages.
+This code looks at the average `SMOKE100` value among different ages
+(with the imputation averages overlaid).
+
+```{r, echo=TRUE}
+# Summary table
+smoke_by_age <- missouri_brfss %>%
+  group_by(AGE80) %>%
+  summarise(
+    `AVG_SMOKE100` = mean(SMOKE100, na.rm = TRUE),
+    `AVG_SMOKE100_IMP1` = mean(SMOKE100_IMP1),
+    `AVG_SMOKE100_IMP2` = mean(SMOKE100_IMP2),
+    `AVG_SMOKE100_IMP3` = mean(SMOKE100_IMP3)
+  )
+
+# Summary plot
+smoke_by_age %>%
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) +
+  geom_bar(stat = "identity") +
+  geom_point(aes(y = AVG_SMOKE100_IMP1, color = "Imputation 1")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP2, color = "Imputation 2")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP3, color = "Imputation 3"))
+```
+
+## Example Usage
 
 ```{r}
 # Summary table
 smoke_by_age <- missouri_brfss %>%
   group_by(AGE80) %>%
-  summarise(`AVG_SMOKE100` = mean(SMOKE100_IMP1))
+  summarise(
+    `AVG_SMOKE100` = mean(SMOKE100, na.rm = TRUE),
+    `AVG_SMOKE100_IMP1` = mean(SMOKE100_IMP1),
+    `AVG_SMOKE100_IMP2` = mean(SMOKE100_IMP2),
+    `AVG_SMOKE100_IMP3` = mean(SMOKE100_IMP3)
+  )
 
 # Summary plot
 smoke_by_age %>%
-  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) + geom_bar(stat = "identity")
+  ggplot(aes(x = AGE80, y = AVG_SMOKE100)) +
+  geom_bar(stat = "identity") +
+  geom_point(aes(y = AVG_SMOKE100_IMP1, color = "Imputation 1")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP2, color = "Imputation 2")) +
+  geom_point(aes(y = AVG_SMOKE100_IMP3, color = "Imputation 3"))
 ```
 
-## Example Usage
-
-- A value of 1 indicates that a person *has* smoked 100 cigarettes
-- a value of 2 indicates that a person *has not*
-- The trend seen in the plot is what you would expect, as cigarettes were more common for older
-generations growing up than they are now
-- Younger ages have an average
-closer to 2, due to alternate, popular nicotine devices
+- value of 1 indicates they **have** smoked 100 cigarettes
+- value of 2 indicates they **have not** smoked 100 cigarettes
 
 # Conclusion
 - In this project, we transformed raw BRFSS Missouri data into a clean,
