@@ -257,10 +257,55 @@ miss_summary <- miss_summary |>
 - Kept important **Demographics** to provide basic info, as well as for imputation
 
 ## Demographics
+We observe 18 different variables pertaining to demographics of respondents, 14,528 rows total.
+
+<div style="font-size: 0.65em">
+
+::: columns
+::: column
+
+- **SEQNO**: Key of the dataset  
+- **MARITAL**: Marital status  
+- **EDUCA**: Education level  
+- **VETERAN3**: Veteran status  
+- **EMPLOY1**: Employment status  
+- **CHILDREN**: Number of children in household  
+- **INCOME3**: Income level  
+- **PREGNANT**: Pregnancy status  
+- **WEIGHT2**: Reported weight in pounds 
+- **CRACE1**: Child non-hispanic race including multiracial  
+
+:::
+::: column
+
+- **CAGEG**: Child age 
+- **AGE80**: Age value (collapsed above 80)  
+- **GENHLTH**: General health  
+- **MENTHLTH**: Number of days mental health not good (out of the past month)  
+- **CHCOCNC1**: Melanoma or other types of cancer
+- **ALCDAY4**: Days in the past 30 had alcohol  
+- **MARJSMOK**: Did you smoke marijuana or cannabis  
+- **ASTHMS1**: Asthma status
+
+:::
+:::
+</div>
 
 ## Cognitive Decline
+For the cognitive decline topic, we observe these 4 variables containing 14,528 rows of observations
+
+- **SEQNO**: Key of the dataset  
+- **CIMEMLO1**: Difficulties with thinking or memory  
+- **CDHOUS1**: Given up day-to-day chores due to thinking or memory  
+- **CDSOCIA1**: Difficulties with thinking or memory interfering with work or social activities 
 
 ## Tobacco Use
+For the tobacco use topic, we observe these 4 variables also containing 14,528 rows of observations.
+
+- **SEQNO**: Key of the dataset  
+- **SMOKER3**: General smoking status  
+- **SMOKE100**: Smoked at least 100 cigarettes  
+- **ECIGNOW**: E-cigarettes usage
 
 # Cleaning the Data
 
