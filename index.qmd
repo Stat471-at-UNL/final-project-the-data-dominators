@@ -384,9 +384,7 @@ In all cases, the result was highly significant ($p$-value $\le 10^{-16}$), prov
 After analyzing the missing values, we imputed three fields from our
 chosen modules:
 
--   `SMOKE100`
-    -   Values: 1 (Yes); 2 (No); 7 (Don't Know); 9
-        (Refused)
+-   `SMOKE100`: "Have you smoked at least 100 cigarettes in your entire life?" -- Values: Yes, No, Don't Know, Refused
 -   `ECIGNOW`
     -   Values: 1 (Never); 2 (Every day); 3 (Some
         days); 4 (Not right now); 7 (Don't know); 9 (Refused)
