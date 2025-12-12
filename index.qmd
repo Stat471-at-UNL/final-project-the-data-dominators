@@ -392,8 +392,7 @@ chosen modules:
     -   Values: 1 (Yes); 2 (No); 7 (Don't know); 9
         (Refused)
 
-Since values of 7 and 9 represent missing data in this context, we
-treated them as such by recoding them to `NA` prior to the imputation.
+We decided to treat answers of `Don't know` and `Refused` as non-responses and recoded them as `NA` prior to the imputation.
 
 The imputation method that we chose to use was **Predictive Mean Matching
 (PMM)**, implemented using the `mice` library. This is a reliable
