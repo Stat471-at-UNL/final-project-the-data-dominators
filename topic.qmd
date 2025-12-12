@@ -1,0 +1,45 @@
+---
+title: "STAT 471 Project Topic"
+format: html
+---
+
+# The Data Dominators
+
+Members: Mitch Fehr, Jack Stewart, Brett Stewart, Jia Yee Wong
+
+## Introduction
+
+We are developing an R package that contains cleaned 2023 and 2024 BRFSS datasets based on records from the state of Missouri. We chose this project because accessing BRFSS data currently requires downloading and manually extracting large ZIP files from the official website, which can be time-consuming and inconvenient. By creating this package, we aim to make the dataset easily accessible and ready to use directly within RStudio. Our goal is to simplify the process for other users and make BRFSS a well-known, user-friendly dataset that can be loaded as easily as built-in datasets like *iris*.
+
+## Dataset
+
+The BRFSS data for our project is found at this [link](https://www.cdc.gov/brfss/annual_data/annual_data.htm). The CDC along with state health departments regularly conduct telephone surveys to collect this health-related data about U.S. residents. We downloaded the 2023 and 2024 data (most recent releases) in the SAS Transport Format, both provided in separate .zip files. Reading in these files can be easily accomplished with the help of the `haven` R package.
+
+To load the data:
+
+```{r, eval=FALSE}
+library(haven)
+
+brfss_2024 <- read_xpt(unz("data/LLCP2024XPT.zip", "LLCP2024.XPT ")) # 457,670 records
+brfss_2023 <- read_xpt(unz("data/LLCP2023XPT.zip", "LLCP2023.XPT ")) # 433,323 records
+```
+
+We plan to filter the dataset to only use records from the state of Missouri. Our original idea was to use Nebraska's data, but since it has limited topics, we chose our southeastern neighbors. The topics covered are:
+
+-   Cancer Survivorship: Course of Treatment, Cancer Survivorship: Pain Management, Cancer Survivorship: Type of Cancer, Childhood Asthma Prevalence, Cognitive Decline, Diabetes, HPV – Vaccination, Marijuana Use, Other Tobacco Use, Random Child Selection, Sexual Orientation, Tobacco Cessation
+
+## Course Relevance
+
+There are several techniques within the scope of this course that will need to be utilized for the completion of this project:
+
+1.  The first of which will be identifying missing values and what kind of missing value they are (MCAR, MAR, MNAR). We evaluated the Missing Completely At Random (MCAR) assumption using Little’s MCAR test. For the set of tobacco-use variables in 2024 (`SMOKE100, SMOKDAY2, USENOW3, ECIGNOW3`), the test yielded χ²(18) = 7033, p \< 0.001, with 10 distinct missing-data patterns. For the 2023 tobacco variables (`SMOKE100, SMOKDAY2, USENOW3, ECIGNOW2`), the result was similarly extreme, χ²(16) = 6957, p \< 0.001, with 9 missing-data patterns. The results strongly suggest that the missing data on tobacco use is not random. Among households with at least one child, Little’s MCAR test for the childhood asthma variables (`CASTHDX2, CASTHNO2`) also strongly rejected MCAR in both years: χ²(1) = 1412, p \< 0.001 in 2024 and χ²(1) = 1360, p \< 0.001 in 2023 (3 missing-data patterns in each year). Therefore, the missing data for childhood asthma is also not random.
+2.  Another skill required to complete this project will be imputing missing values. After analyzing the missing values, we will attempt to replace them with plausible values. To do this, we will use the Predictive Mean Matching technique to get more realistic results than just using the mean. For imputing, we will focus on two of Missouri's modules, **Childhood Asthma Prevalence** and **Tobacco Use**. For Childhood Asthma Prevalence, we will impute missing values in `CASTHDX2` (Ever told child has asthma) and `CASTHN02` (Child still has asthma) using demographics (i.e. `CAGEG`, `_CRACE1`) and family characteristics (i.e. `ASTHMA3`, `_SMOKER3`, `INCOME3`). For Tobacco Use, we will impute missing values in `SMOKDAY2` (Current smoking frequency) and `ECIGNOW2` (Current e-cig use) with demographics (`_AGE80`, `INCOME3`), health conditions (`CHCOCNC1`, `ASTHMA3`), and other substance usage (i.e. `ALCDAY4`, `MARJSMOKE`). These imputed values will be in a new column, so that a user of the library has access to the imputed columns as well as the originals.
+3.  A third technique within the scope of the course that will need to be applied is the transforming and tidying of data. Creating an R package containing untidy data sets would lead to usability issues and definitely be a problem. Our plan for tidying the data will likely change over time as we clean the data set, but getting it to at least second normal form would be ideal (first normal form + no partial dependencies).
+
+## Plan of Work
+
+We’ll create a package by downloading the 2023–2024 BRFSS files directly from the CDC. Our project will follow a structured messy-data workflow: importing, diagnosing, cleaning, imputing, transforming, and then packaging the BRFSS data. The original CDC ZIP/XPT files for 2023 and 2024 will be stored unchanged in a directory. After importing the data, we will filter each dataset to Missouri and assess each table for variable-type inconsistencies, nonstandard missing-value codes, and structural differences across years. BRFSS variable names often shift between survey cycles (`ECIGNOW2` vs. `ECIGNOW3`), one of the first tasks will be establishing consistent variable names for both years.
+
+Next, we’ll need to diagnose and handle missing values. We will find missingness using tools, examine missing-data patterns, and apply Little’s MCAR Test for the Childhood Asthma and Tobacco modules. Since early results strongly reject MCAR, we will carry out multiple imputation using Predictive Mean Matching. Childhood asthma variables (`CASTHDX2`, `CASTHNO2`) will be imputed using demographic and family predictors, whereas tobacco-use variables (`SMOKDAY2`, `ECIGNOW2/3`) will be imputed using demographic, health, and substance-use indicators. For each variable, we will generate five imputations, take 2 random ones, and retain both an original and imputed version for transparency.
+
+After imputation, we will tidy and normalize the Missouri datasets to ensure BRFSS response codes are recoded into meaningful categories and are at least second normal form. Cleaned and imputed datasets will then be incorporated into the package. The final product will be a reproducible R package and explanation that makes a large, messy public health dataset accessible and easy to use for future users.
