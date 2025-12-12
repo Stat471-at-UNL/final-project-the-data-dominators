@@ -373,11 +373,10 @@ tobacco_2023 <- brfss_2023_missing |>
   select(all_of(tobacco_vars_2023))
 
 mcar_tobacco_2023 <-mcar_test(tobacco_2023)
-mcar_tobacco_2023
+#mcar_tobacco_2023
 ```
 
-In all cases, Little’s MCAR test was highly significant(p \<
-`r mcar_tobacco_2023$p.value`), providing strong evidence against MCAR
+In all cases, Little’s MCAR test was highly significant($p$-value $\le 1e-16$), providing strong evidence against MCAR
 and supporting the use of multiple imputation.
 
 ### Imputing Missing Values
