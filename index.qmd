@@ -394,8 +394,8 @@ chosen modules:
 
 We decided to treat answers of `Don't know` and `Refused` as non-responses and recoded them as `NA` prior to the imputation.
 
-The imputation method that we chose to use was **Predictive Mean Matching
-(PMM)**, implemented using the `mice` library. This is a reliable
+As imputation method we chose to use **Predictive Mean Matching
+(PMM)** [@pmm] implemented using the `mice` library [@mice]. This is a reliable
 prediction strategy that maintains realism by preserving the original
 shape and spread of the data. The algorithm functions by identifying a
 small group of "donor" instances (we used the default of 5) that are
