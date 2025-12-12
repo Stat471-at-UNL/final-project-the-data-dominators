@@ -358,9 +358,8 @@ Several items had a large proportion of missing data, especially `CDHOUS1`
 and `CDSOCIA1` with over 85% missing, so we excluded them from
 the final imputation models.
 
-We then tested whether the data were Missing Completely At Random (MCAR)
-using Little’s MCAR test (`naniar::mcar_test`), applied separately to
-tobacco and cognitive variables in each year. Below is an example of the
+Little's test [@little] (implemented as `naniar::mcar_test` in the `naniar` package [@naniar]) showed that the structure of missing values in either the
+tobacco and cognitive variables can not be assumed to be missing completely at random (MCAR). Below is an example of the
 MCAR test for tobacco 2023.
 
 ```{r}
@@ -375,12 +374,10 @@ tobacco_vars_2023 <- intersect(tobacco_vars, names(brfss_2023_missing))
 tobacco_2023 <- brfss_2023_missing |>
   select(all_of(tobacco_vars_2023))
 
-mcar_tobacco_2023 <-mcar_test(tobacco_2023)
-#mcar_tobacco_2023
+mcar_test(tobacco_2023)
 ```
 
-In all cases, Little’s MCAR test [@little] was highly significant($p$-value $\le 1e-16$), providing strong evidence against MCAR
-and supporting the use of multiple imputation.
+In all cases, the result was highly significant ($p$-value $\le 10^{-16}$), providing strong evidence against MCAR. In order to enable statistically valid analyses, we provide imputations for missing values.
 
 ### Imputing Missing Values
 
