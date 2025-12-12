@@ -13,6 +13,9 @@ format:
 editor: 
   markdown: 
     wrap: 72
+bibliography: references.bib    
+execute:
+  cache: true
 ---
 
 ```{r, include=FALSE}
@@ -376,7 +379,7 @@ mcar_tobacco_2023 <-mcar_test(tobacco_2023)
 #mcar_tobacco_2023
 ```
 
-In all cases, Little’s MCAR test was highly significant($p$-value $\le 1e-16$), providing strong evidence against MCAR
+In all cases, Little’s MCAR test [@little] was highly significant($p$-value $\le 1e-16$), providing strong evidence against MCAR
 and supporting the use of multiple imputation.
 
 ### Imputing Missing Values
@@ -569,3 +572,5 @@ After imputation, we reorganized the cleaned data into separate tidy
 datasets (Demographics, CognitiveDecline, and TobaccoUse) using
 `SEQNO` as a key. This structure makes the dataset easier to explore and
 analyze in future projects.
+
+## References
